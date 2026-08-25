@@ -1,10 +1,10 @@
-import { getDb } from "./db";
+import { getSqlReady } from "./db";
 import type { PrioridadKey, StageHistoryEntry, StageKey, Ticket, TipoKey } from "./types";
 
-function nextFolio(): string {
-  const db = getDb();
-  const row = db.prepare("SELECT COUNT(*) as n FROM tickets").get() as { n: number };
-  const seq = row.n + 1;
+async function nextFolio(): Promise<string> {
+  const sql = await getSqlReady();
+  const rows = (await sql`SELECT COUNT(*)::int AS n FROM tickets`) as { n: number }[];
+  const seq = rows[0].n + 1;
   return `TCK-${String(seq).padStart(4, "0")}`;
 }
 
@@ -18,48 +18,41 @@ export interface CreateTicketInput {
   area?: string | null;
 }
 
-export function createTicket(input: CreateTicketInput): Ticket {
-  const db = getDb();
-  const folio = nextFolio();
+export async function createTicket(input: CreateTicketInput): Promise<Ticket> {
+  const sql = await getSqlReady();
+  const folio = await nextFolio();
 
-  const insert = db.prepare(`
+  const rows = (await sql`
     INSERT INTO tickets (folio, titulo, descripcion, tipo, prioridad, solicitante_nombre, solicitante_email, area, stage)
-    VALUES (@folio, @titulo, @descripcion, @tipo, @prioridad, @solicitante_nombre, @solicitante_email, @area, 'nuevo')
-  `);
+    VALUES (${folio}, ${input.titulo}, ${input.descripcion}, ${input.tipo}, ${input.prioridad}, ${input.solicitante_nombre}, ${input.solicitante_email}, ${input.area ?? null}, 'nuevo')
+    RETURNING *
+  `) as Ticket[];
+  const ticket = rows[0];
 
-  const info = insert.run({
-    folio,
-    titulo: input.titulo,
-    descripcion: input.descripcion,
-    tipo: input.tipo,
-    prioridad: input.prioridad,
-    solicitante_nombre: input.solicitante_nombre,
-    solicitante_email: input.solicitante_email,
-    area: input.area ?? null,
-  });
+  await sql`
+    INSERT INTO stage_history (ticket_id, from_stage, to_stage, changed_by, comment)
+    VALUES (${ticket.id}, NULL, 'nuevo', ${input.solicitante_nombre}, 'Ticket creado')
+  `;
 
-  db.prepare(
-    `INSERT INTO stage_history (ticket_id, from_stage, to_stage, changed_by, comment) VALUES (?, NULL, 'nuevo', ?, 'Ticket creado')`
-  ).run(info.lastInsertRowid, input.solicitante_nombre);
-
-  return getTicketById(Number(info.lastInsertRowid))!;
+  return ticket;
 }
 
-export function listTickets(): Ticket[] {
-  const db = getDb();
-  return db.prepare("SELECT * FROM tickets ORDER BY created_at DESC").all() as Ticket[];
+export async function listTickets(): Promise<Ticket[]> {
+  const sql = await getSqlReady();
+  return (await sql`SELECT * FROM tickets ORDER BY created_at DESC`) as Ticket[];
 }
 
-export function getTicketById(id: number): Ticket | undefined {
-  const db = getDb();
-  return db.prepare("SELECT * FROM tickets WHERE id = ?").get(id) as Ticket | undefined;
+export async function getTicketById(id: number): Promise<Ticket | undefined> {
+  const sql = await getSqlReady();
+  const rows = (await sql`SELECT * FROM tickets WHERE id = ${id}`) as Ticket[];
+  return rows[0];
 }
 
-export function getStageHistory(ticketId: number): StageHistoryEntry[] {
-  const db = getDb();
-  return db
-    .prepare("SELECT * FROM stage_history WHERE ticket_id = ? ORDER BY created_at ASC, id ASC")
-    .all(ticketId) as StageHistoryEntry[];
+export async function getStageHistory(ticketId: number): Promise<StageHistoryEntry[]> {
+  const sql = await getSqlReady();
+  return (await sql`
+    SELECT * FROM stage_history WHERE ticket_id = ${ticketId} ORDER BY created_at ASC, id ASC
+  `) as StageHistoryEntry[];
 }
 
 export interface ChangeStageInput {
@@ -68,34 +61,24 @@ export interface ChangeStageInput {
   comment?: string | null;
 }
 
-export function changeStage(
+export async function changeStage(
   ticketId: number,
   input: ChangeStageInput
-): { ticket: Ticket; entry: StageHistoryEntry } {
-  const db = getDb();
-  const current = getTicketById(ticketId);
+): Promise<{ ticket: Ticket; entry: StageHistoryEntry }> {
+  const sql = await getSqlReady();
+  const current = await getTicketById(ticketId);
   if (!current) {
     throw new Error("Ticket no encontrado");
   }
 
-  const tx = db.transaction(() => {
-    db.prepare("UPDATE tickets SET stage = ?, updated_at = datetime('now') WHERE id = ?").run(
-      input.toStage,
-      ticketId
-    );
+  await sql`UPDATE tickets SET stage = ${input.toStage}, updated_at = now() WHERE id = ${ticketId}`;
 
-    const info = db
-      .prepare(
-        `INSERT INTO stage_history (ticket_id, from_stage, to_stage, changed_by, comment) VALUES (?, ?, ?, ?, ?)`
-      )
-      .run(ticketId, current.stage, input.toStage, input.changedBy ?? null, input.comment ?? null);
+  const rows = (await sql`
+    INSERT INTO stage_history (ticket_id, from_stage, to_stage, changed_by, comment)
+    VALUES (${ticketId}, ${current.stage}, ${input.toStage}, ${input.changedBy ?? null}, ${input.comment ?? null})
+    RETURNING *
+  `) as StageHistoryEntry[];
 
-    return info.lastInsertRowid;
-  });
-
-  const entryId = tx();
-  const entry = db.prepare("SELECT * FROM stage_history WHERE id = ?").get(entryId) as StageHistoryEntry;
-  const ticket = getTicketById(ticketId)!;
-
-  return { ticket, entry };
+  const ticket = (await getTicketById(ticketId))!;
+  return { ticket, entry: rows[0] };
 }

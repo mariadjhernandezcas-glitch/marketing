@@ -9,7 +9,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ error: "Id inválido" }, { status: 400 });
   }
 
-  const existing = getTicketById(id);
+  const existing = await getTicketById(id);
   if (!existing) {
     return NextResponse.json({ error: "Ticket no encontrado" }, { status: 404 });
   }
@@ -30,7 +30,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const comment = body.comment ? String(body.comment).trim() : null;
   const fromStage = existing.stage;
 
-  const { ticket } = changeStage(id, { toStage: toStage as never, changedBy, comment });
+  const { ticket } = await changeStage(id, { toStage: toStage as never, changedBy, comment });
 
   sendStageChangedEmail(ticket, fromStage, comment).catch((err) =>
     console.error("Error enviando correo:", err)

@@ -4,7 +4,7 @@ import { sendTicketCreatedEmail } from "@/lib/mailer";
 import { PRIORIDADES, TIPOS } from "@/lib/types";
 
 export async function GET() {
-  const tickets = listTickets();
+  const tickets = await listTickets();
   return NextResponse.json({ tickets });
 }
 
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: errors.join(" ") }, { status: 400 });
   }
 
-  const ticket = createTicket({
+  const ticket = await createTicket({
     titulo,
     descripcion,
     tipo: tipo as never,

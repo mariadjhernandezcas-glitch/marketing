@@ -7,11 +7,11 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Id inválido" }, { status: 400 });
   }
 
-  const ticket = getTicketById(id);
+  const ticket = await getTicketById(id);
   if (!ticket) {
     return NextResponse.json({ error: "Ticket no encontrado" }, { status: 404 });
   }
 
-  const history = getStageHistory(id);
+  const history = await getStageHistory(id);
   return NextResponse.json({ ticket, history });
 }

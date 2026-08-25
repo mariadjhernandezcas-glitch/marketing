@@ -6,19 +6,19 @@ import { prioridadColor, prioridadLabel, stageColor, stageLabel, tipoLabel } fro
 
 export const dynamic = "force-dynamic";
 
-function formatDate(iso: string) {
-  return new Date(iso.replace(" ", "T") + "Z").toLocaleString("es-MX", {
+function formatDate(value: string | Date) {
+  return new Date(value).toLocaleString("es-MX", {
     dateStyle: "medium",
     timeStyle: "short",
   });
 }
 
-export default function TicketDetailPage({ params }: { params: { id: string } }) {
+export default async function TicketDetailPage({ params }: { params: { id: string } }) {
   const id = Number(params.id);
-  const ticket = Number.isInteger(id) ? getTicketById(id) : undefined;
+  const ticket = Number.isInteger(id) ? await getTicketById(id) : undefined;
   if (!ticket) notFound();
 
-  const history = getStageHistory(ticket.id);
+  const history = await getStageHistory(ticket.id);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">

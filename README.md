@@ -8,7 +8,8 @@ completa y notificaciones por correo en cada cambio de etapa.
 
 - **Formulario de solicitud** (`/nuevo`): captura título, descripción, tipo
   (ajuste de automatización Escala u otra solicitud), prioridad y datos del
-  solicitante.
+  solicitante. Es la página a la que entran los asesores/personas para dejar
+  un ticket.
 - **Tablero pipeline** (`/`): vista Kanban con las etapas
   `Nuevo → En revisión → En progreso → En pruebas → Completado / Rechazado`.
   Cada ticket se puede mover de etapa directamente desde su tarjeta.
@@ -18,26 +19,53 @@ completa y notificaciones por correo en cada cambio de etapa.
 - **Notificaciones por correo**: al crear un ticket y al cambiar de etapa se
   envía un correo automático al solicitante (y, si se configura, a un correo
   interno del equipo) informando el avance.
-- **Persistencia**: SQLite local (`better-sqlite3`), sin necesidad de una
-  base de datos externa para empezar a usarlo.
+- **Persistencia**: Postgres (vía `@vercel/postgres`), pensado para
+  desplegarse en Vercel sin servidores propios.
 
-## Requisitos
+## Desplegar en Vercel (recomendado)
+
+1. **Importar el repo**: en https://vercel.com/new, importa este repositorio
+   de GitHub y selecciona la rama que quieras publicar.
+2. **Agregar una base de datos Postgres**: en el proyecto de Vercel, ve a la
+   pestaña **Storage** → **Create Database** → **Postgres** (puede ser
+   Neon o Vercel Postgres, cualquiera funciona). Al conectarla al proyecto,
+   Vercel inyecta automáticamente las variables `POSTGRES_URL` y relacionadas
+   — no hay que configurarlas a mano.
+3. **Variables de entorno** (Project Settings → Environment Variables):
+   agrega las variables de correo que necesites (ver tabla abajo). Sin ellas
+   la app funciona igual, solo no manda correos.
+4. **Deploy**. Al terminar, la URL pública queda como
+   `https://<tu-proyecto>.vercel.app`. Comparte con el equipo:
+   - `https://<tu-proyecto>.vercel.app/nuevo` → para que asesores/personas
+     dejen tickets.
+   - `https://<tu-proyecto>.vercel.app` → tablero pipeline para dar
+     seguimiento.
+
+Cada vez que se haga push/merge a la rama conectada, Vercel vuelve a
+desplegar automáticamente.
+
+## Requisitos (desarrollo local)
 
 - Node.js 18+
+- Una base de datos Postgres accesible (por ejemplo, una gratuita en
+  [neon.tech](https://neon.tech) o `vercel env pull` si ya tienes el
+  proyecto conectado en Vercel).
 
 ## Instalación y desarrollo local
 
 ```bash
 npm install
-cp .env.example .env.local   # opcional, para habilitar el envío de correos
+cp .env.example .env.local   # completa POSTGRES_URL y, si quieres, el SMTP
 npm run dev
 ```
 
-Abre http://localhost:3000
+Abre http://localhost:3000. Las tablas se crean automáticamente en el primer
+request.
 
 ## Configurar el envío de correos
 
-Completa estas variables en `.env.local` (ver `.env.example`):
+Completa estas variables en `.env.local` (ver `.env.example`) o en las
+Environment Variables del proyecto en Vercel:
 
 | Variable            | Descripción                                                        |
 | ------------------- | ------------------------------------------------------------------- |
@@ -55,20 +83,6 @@ omiten y solo se registra un mensaje en la consola del servidor.
 > Si usas Gmail, necesitas generar una "contraseña de aplicación" (no tu
 > contraseña normal) en la configuración de seguridad de la cuenta.
 
-## Datos
-
-Los tickets se guardan en un archivo SQLite dentro de `./data/tickets.db`
-(configurable con `TICKETS_DATA_DIR`). Esta carpeta no se sube al
-repositorio (ver `.gitignore`).
-
-**Importante para producción:** si despliegas en una plataforma serverless
-con sistema de archivos efímero (por ejemplo Vercel), el archivo SQLite no
-persistirá entre despliegues. Para producción se recomienda:
-- Desplegar en un servidor Node persistente (VPS, Railway, Render, etc.) con
-  un volumen para `./data`, o
-- Migrar `lib/db.ts` a una base de datos gestionada (Postgres, etc.) si se
-  necesita alta disponibilidad.
-
 ## Build de producción
 
 ```bash
@@ -81,7 +95,7 @@ npm start
 Este MVP no incluye autenticación: cualquier persona con la URL puede crear
 tickets y cambiar de etapa. Si se va a exponer públicamente, colócalo detrás
 de un proveedor de autenticación (SSO, proxy con login, red interna/VPN) antes
-de usarlo en producción.
+de usarlo en producción, o al menos evita compartir la URL fuera del equipo.
 
 ## Estructura del proyecto
 
@@ -96,7 +110,7 @@ app/
 components/
   KanbanBoard.tsx, NewTicketForm.tsx, StageMover.tsx, Badge.tsx
 lib/
-  db.ts        Conexión y esquema SQLite
+  db.ts        Conexión y esquema Postgres
   tickets.ts    Acceso a datos (crear, listar, cambiar etapa, historial)
   mailer.ts     Envío de correos (nodemailer)
   types.ts      Etapas del pipeline, tipos y prioridades

@@ -1,25 +1,35 @@
-import Database from "better-sqlite3";
-import path from "path";
-import fs from "fs";
-
-const DATA_DIR = process.env.TICKETS_DATA_DIR || path.join(process.cwd(), "data");
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-const DB_PATH = path.join(DATA_DIR, "tickets.db");
+import { neon, NeonQueryFunction } from "@neondatabase/serverless";
 
 declare global {
   // eslint-disable-next-line no-var
-  var __ticketsDb: Database.Database | undefined;
+  var __ticketsSql: NeonQueryFunction<false, false> | undefined;
+  // eslint-disable-next-line no-var
+  var __ticketsSchemaReady: Promise<void> | undefined;
 }
 
-function createConnection(): Database.Database {
-  const db = new Database(DB_PATH);
-  db.pragma("journal_mode = WAL");
+function getSql(): NeonQueryFunction<false, false> {
+  if (!global.__ticketsSql) {
+    const connectionString =
+      process.env.DATABASE_URL ||
+      process.env.POSTGRES_URL ||
+      process.env.POSTGRES_URL_NON_POOLING ||
+      "";
 
-  db.exec(`
+    if (!connectionString) {
+      throw new Error(
+        "Falta configurar la base de datos: define DATABASE_URL (o POSTGRES_URL) en las variables de entorno."
+      );
+    }
+
+    global.__ticketsSql = neon(connectionString);
+  }
+  return global.__ticketsSql;
+}
+
+async function ensureSchema(sql: NeonQueryFunction<false, false>): Promise<void> {
+  await sql(`
     CREATE TABLE IF NOT EXISTS tickets (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       folio TEXT NOT NULL UNIQUE,
       titulo TEXT NOT NULL,
       descripcion TEXT NOT NULL,
@@ -29,30 +39,32 @@ function createConnection(): Database.Database {
       solicitante_email TEXT NOT NULL,
       area TEXT,
       stage TEXT NOT NULL DEFAULT 'nuevo',
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
 
+  await sql(`
     CREATE TABLE IF NOT EXISTS stage_history (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       ticket_id INTEGER NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
       from_stage TEXT,
       to_stage TEXT NOT NULL,
       changed_by TEXT,
       comment TEXT,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_stage_history_ticket ON stage_history(ticket_id);
-    CREATE INDEX IF NOT EXISTS idx_tickets_stage ON tickets(stage);
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
   `);
 
-  return db;
+  await sql(`CREATE INDEX IF NOT EXISTS idx_stage_history_ticket ON stage_history(ticket_id)`);
+  await sql(`CREATE INDEX IF NOT EXISTS idx_tickets_stage ON tickets(stage)`);
 }
 
-export function getDb(): Database.Database {
-  if (!global.__ticketsDb) {
-    global.__ticketsDb = createConnection();
+export async function getSqlReady(): Promise<NeonQueryFunction<false, false>> {
+  const sql = getSql();
+  if (!global.__ticketsSchemaReady) {
+    global.__ticketsSchemaReady = ensureSchema(sql);
   }
-  return global.__ticketsDb;
+  await global.__ticketsSchemaReady;
+  return sql;
 }
