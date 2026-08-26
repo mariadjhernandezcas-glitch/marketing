@@ -4,6 +4,42 @@ Página interna para que el equipo de Hommik envíe ajustes de solicitudes de
 automatización de Escala u otras solicitudes del proceso, con trazabilidad
 completa y notificaciones por correo en cada cambio de etapa.
 
+## Página estática (`docs/index.html`) — para GitHub Pages
+
+Este repositorio incluye una versión ligera de una sola página HTML, sin
+backend ni base de datos, pensada para publicarse gratis con **GitHub
+Pages** y que el cliente la vea sin necesidad de crear cuenta en ninguna
+plataforma.
+
+**Cómo activarla** (una sola vez, ~30 segundos):
+
+1. En este repositorio en GitHub: **Settings → Pages**.
+2. En "Build and deployment" → Source: **Deploy from a branch**.
+3. Branch: selecciona esta rama (o `main` después de hacer merge del PR) y
+   carpeta **`/docs`**.
+4. Guarda. GitHub te da la URL pública, algo como
+   `https://<tu-usuario>.github.io/marketing/`.
+
+**Qué hace y qué no:**
+
+- Formulario para reportar ajustes de Escala u otras solicitudes, con
+  adjuntar evidencia (captura de pantalla, se comprime automáticamente).
+- Cada solicitud queda con folio y trazabilidad de cambios de etapa.
+- **Importante:** al ser una página estática sin servidor, cada solicitud
+  se guarda solo en el navegador de quien la envía (`localStorage`) — no
+  hay un tablero compartido entre distintas personas ni envío de correos.
+  Si más adelante necesitas un tablero realmente compartido entre todo el
+  equipo, con base de datos propia, usa la app de Next.js descrita abajo
+  (desplegada en Vercel).
+
+## App con base de datos compartida (Next.js + Vercel)
+
+La app completa de este repositorio (`app/`, `lib/`, `components/`) es la
+versión con tablero compartido en tiempo real para todo el equipo, con base
+de datos propia y notificaciones por correo. Requiere desplegarse en un
+servicio como Vercel (ver más abajo) — a diferencia de la página estática de
+`docs/`, sí necesita una cuenta de hosting.
+
 ## Qué incluye
 
 - **Formulario de solicitud** (`/nuevo`): captura título, descripción, tipo

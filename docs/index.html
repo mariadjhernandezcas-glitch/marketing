@@ -1,0 +1,1492 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>Tickets Hommik</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎫</text></svg>" />
+<meta name="description" content="Formulario para que el equipo de Hommik reporte ajustes de automatización de Escala u otras solicitudes del proceso, con evidencia adjunta y trazabilidad." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+  rel="stylesheet"
+/>
+<style>
+  :root {
+    --paper: #eff1f6;
+    --surface: #ffffff;
+    --surface-2: #e7e9f1;
+    --border: #d7dae4;
+    --ink: #171a22;
+    --ink-muted: #5b6172;
+    --accent: #0e7c86;
+    --accent-ink: #ffffff;
+    --accent-dim: #cfe7e8;
+    --warn: #a86107;
+    --warn-bg: #fbebd3;
+    --success: #227a4d;
+    --success-bg: #dcf0e4;
+    --danger: #b13333;
+    --danger-bg: #fbe2e2;
+    --neutral: #6b7280;
+    --neutral-bg: #e9eaf0;
+    --shadow: 0 1px 2px rgba(23, 26, 34, 0.06), 0 12px 28px -14px rgba(23, 26, 34, 0.22);
+    --radius: 10px;
+    --font-display: "Big Shoulders Display", "Arial Narrow", sans-serif;
+    --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #10131b;
+      --surface: #1a1e29;
+      --surface-2: #232838;
+      --border: #2c3244;
+      --ink: #e8eaf2;
+      --ink-muted: #9aa1b5;
+      --accent: #35b0b8;
+      --accent-ink: #08181a;
+      --accent-dim: #16383b;
+      --warn: #e2a63b;
+      --warn-bg: #3a2c10;
+      --success: #4fbe84;
+      --success-bg: #12301f;
+      --danger: #e2685f;
+      --danger-bg: #3a1717;
+      --neutral: #9aa1b5;
+      --neutral-bg: #232838;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 28px -14px rgba(0, 0, 0, 0.6);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #10131b;
+    --surface: #1a1e29;
+    --surface-2: #232838;
+    --border: #2c3244;
+    --ink: #e8eaf2;
+    --ink-muted: #9aa1b5;
+    --accent: #35b0b8;
+    --accent-ink: #08181a;
+    --accent-dim: #16383b;
+    --warn: #e2a63b;
+    --warn-bg: #3a2c10;
+    --success: #4fbe84;
+    --success-bg: #12301f;
+    --danger: #e2685f;
+    --danger-bg: #3a1717;
+    --neutral: #9aa1b5;
+    --neutral-bg: #232838;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 28px -14px rgba(0, 0, 0, 0.6);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  a {
+    color: var(--accent);
+  }
+
+  #app {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 20px 64px;
+  }
+
+  /* ---------- Header ---------- */
+
+  .app-header {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-bottom: 28px;
+  }
+
+  .brand-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 40px;
+    letter-spacing: 0.01em;
+    line-height: 0.95;
+  }
+
+  .wordmark span {
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--ink-muted);
+    margin-top: 6px;
+    max-width: 46ch;
+  }
+
+  .live-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 7px 14px;
+    max-width: 320px;
+  }
+
+  .live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--neutral);
+    box-shadow: 0 0 0 3px var(--neutral-bg);
+    flex: none;
+  }
+
+  .storage-banner {
+    background: var(--warn-bg);
+    color: var(--warn);
+    border: 1px solid var(--warn);
+    border-radius: var(--radius);
+    padding: 10px 16px;
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+
+  .tab-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+  }
+
+  .tab-btn {
+    appearance: none;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 10px 4px;
+    margin-right: 22px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: 0.02em;
+    color: var(--ink-muted);
+    cursor: pointer;
+  }
+
+  .tab-btn:hover {
+    color: var(--ink);
+  }
+
+  .tab-btn.active {
+    color: var(--ink);
+    border-bottom-color: var(--accent);
+  }
+
+  .tab-count {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin-left: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .filter-select {
+    appearance: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 30px 7px 12px;
+    font-size: 13px;
+    color: var(--ink);
+    cursor: pointer;
+    background-image: linear-gradient(45deg, transparent 50%, var(--ink-muted) 50%),
+      linear-gradient(135deg, var(--ink-muted) 50%, transparent 50%);
+    background-position: calc(100% - 15px) 55%, calc(100% - 10px) 55%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+  }
+
+  /* ---------- Board / rail ---------- */
+
+  .board-scroll {
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+
+  .rail {
+    position: relative;
+    display: flex;
+    gap: 20px;
+    min-width: 1600px;
+    margin-bottom: 4px;
+  }
+
+  .rail::before {
+    content: "";
+    position: absolute;
+    left: 15px;
+    right: 245px;
+    top: 15px;
+    height: 2px;
+    background: var(--border);
+    z-index: 0;
+  }
+
+  .station {
+    position: relative;
+    z-index: 1;
+    width: 264px;
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .station-dot {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 2px solid var(--tone);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--tone);
+    flex: none;
+  }
+
+  .station-label {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    line-height: 1.15;
+  }
+
+  .station-meta {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--ink-muted);
+  }
+
+  .columns {
+    display: flex;
+    gap: 20px;
+    min-width: 1600px;
+    align-items: flex-start;
+  }
+
+  .column {
+    width: 264px;
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .column-empty {
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 18px 10px;
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--ink-muted);
+  }
+
+  .board-empty {
+    border: 1px dashed var(--border);
+    border-radius: 14px;
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--ink-muted);
+    font-size: 13.5px;
+  }
+
+  .board-empty a {
+    font-weight: 600;
+  }
+
+  .ticket-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 13px 14px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ticket-card:hover {
+    border-color: var(--accent);
+  }
+
+  .ticket-folio {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.03em;
+    color: var(--ink-muted);
+  }
+
+  .ticket-title {
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 1.35;
+  }
+
+  .ticket-tipo {
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+
+  .chip-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: 999px;
+    padding: 3px 9px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .chip-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .chip.tone-neutral {
+    background: var(--neutral-bg);
+    color: var(--neutral);
+  }
+  .chip.tone-accent {
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
+  .chip.tone-warn {
+    background: var(--warn-bg);
+    color: var(--warn);
+  }
+  .chip.tone-success {
+    background: var(--success-bg);
+    color: var(--success);
+  }
+  .chip.tone-danger {
+    background: var(--danger-bg);
+    color: var(--danger);
+  }
+
+  .ticket-requester {
+    font-size: 11.5px;
+    color: var(--ink-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .quick-move {
+    margin-top: 2px;
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface-2);
+    padding: 6px 8px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  /* ---------- Form ---------- */
+
+  .form-card {
+    max-width: 640px;
+    margin: 8px auto 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 32px 34px;
+    box-shadow: var(--shadow);
+  }
+
+  .form-card h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 26px;
+    margin-bottom: 8px;
+  }
+
+  .form-card > p.form-intro {
+    font-size: 14px;
+    color: var(--ink);
+    margin: 0 0 14px;
+    max-width: 60ch;
+    line-height: 1.6;
+  }
+
+  .form-tips {
+    list-style: none;
+    margin: 0 0 24px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-tips li {
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    padding-left: 16px;
+    position: relative;
+    line-height: 1.5;
+  }
+
+  .form-tips li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 7px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 14px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .field.full {
+    grid-column: 1 / -1;
+  }
+
+  .field label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink-muted);
+  }
+
+  .field label .opt {
+    font-weight: 400;
+    color: var(--ink-muted);
+    opacity: 0.8;
+  }
+
+  .field input,
+  .field select,
+  .field textarea {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 11px;
+    background: var(--surface);
+    color: var(--ink);
+  }
+
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-color: var(--accent);
+  }
+
+  .field textarea {
+    resize: vertical;
+    min-height: 88px;
+    font-family: inherit;
+  }
+
+  .file-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .file-input-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .file-input-hidden:focus + .file-btn {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .file-btn {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    border-radius: 8px;
+  }
+
+  .file-hint {
+    font-size: 11.5px;
+    color: var(--ink-muted);
+  }
+
+  .evidence-preview:empty {
+    display: none;
+  }
+
+  .evidence-preview {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+
+  .evidence-thumb {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    flex: none;
+  }
+
+  .evidence-meta {
+    font-size: 12px;
+    color: var(--ink-muted);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .evidence-remove {
+    appearance: none;
+    background: none;
+    border: none;
+    color: var(--danger);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 6px;
+    flex: none;
+  }
+
+  .form-errors {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border: 1px solid var(--danger);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-top: 16px;
+  }
+
+  .form-errors:empty {
+    display: none;
+  }
+
+  .form-errors ul {
+    margin: 4px 0 0;
+    padding-left: 18px;
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 22px;
+  }
+
+  .btn {
+    appearance: none;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-weight: 600;
+    font-size: 13.5px;
+    cursor: pointer;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+
+  .btn-primary:hover {
+    filter: brightness(1.06);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--ink);
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ---------- Drawer ---------- */
+
+  .drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 12, 18, 0.42);
+    z-index: 40;
+  }
+
+  .drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(460px, 100vw);
+    background: var(--surface);
+    z-index: 41;
+    box-shadow: -18px 0 40px -20px rgba(0, 0, 0, 0.4);
+    overflow-y: auto;
+    padding: 26px 26px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  .drawer-close {
+    align-self: flex-end;
+    appearance: none;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+    color: var(--ink-muted);
+  }
+
+  .drawer-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .drawer h3 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 21px;
+    line-height: 1.2;
+  }
+
+  .drawer-desc {
+    font-size: 13.5px;
+    color: var(--ink);
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+
+  .meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    font-size: 13px;
+  }
+
+  .meta-grid dt {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--ink-muted);
+    margin-bottom: 2px;
+  }
+
+  .meta-grid dd {
+    margin: 0;
+  }
+
+  .meta-grid .full {
+    grid-column: 1 / -1;
+  }
+
+  .drawer hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0;
+  }
+
+  .drawer h4 {
+    font-size: 12.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--ink-muted);
+    margin: 0 0 12px;
+  }
+
+  .evidence-block img.evidence-full {
+    max-width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    display: block;
+    margin-top: 8px;
+  }
+
+  .evidence-caption {
+    font-size: 11.5px;
+    color: var(--ink-muted);
+    margin: 6px 0 0;
+  }
+
+  .timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-left: 2px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .timeline li {
+    position: relative;
+    padding-left: 18px;
+  }
+
+  .timeline li::before {
+    content: "";
+    position: absolute;
+    left: -6px;
+    top: 4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--tone);
+    border: 2px solid var(--surface);
+  }
+
+  .timeline-step {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .timeline-meta {
+    font-size: 11.5px;
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+    margin-top: 1px;
+  }
+
+  .timeline-comment {
+    font-size: 13px;
+    color: var(--ink);
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+
+  .stage-form .field-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* ---------- Toasts ---------- */
+
+  #toast-root {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 320px;
+  }
+
+  .toast {
+    border-radius: 8px;
+    padding: 11px 15px;
+    font-size: 13px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .toast.tone-success {
+    border-color: var(--success);
+    color: var(--success);
+    background: var(--success-bg);
+  }
+  .toast.tone-warn {
+    border-color: var(--warn);
+    color: var(--warn);
+    background: var(--warn-bg);
+  }
+  .toast.tone-danger {
+    border-color: var(--danger);
+    color: var(--danger);
+    background: var(--danger-bg);
+  }
+
+  @media (max-width: 640px) {
+    .wordmark {
+      font-size: 30px;
+    }
+    .field-grid {
+      grid-template-columns: 1fr;
+    }
+    .form-card {
+      padding: 24px 20px;
+    }
+    .meta-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .ticket-card,
+    .tab-btn,
+    .btn {
+      transition: border-color 0.15s ease, color 0.15s ease, filter 0.15s ease;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="toast-root" aria-live="polite"></div>
+<div id="app"></div>
+<script id="app-logic">
+  (function () {
+    "use strict";
+
+    var STORAGE_KEY = "hommikTicketsState_v1";
+
+    var STAGES = [
+      { key: "nuevo", label: "Nuevo", tone: "neutral" },
+      { key: "en_revision", label: "En revisión", tone: "accent" },
+      { key: "en_progreso", label: "En progreso", tone: "accent" },
+      { key: "en_pruebas", label: "En pruebas", tone: "warn" },
+      { key: "completado", label: "Completado", tone: "success" },
+      { key: "rechazado", label: "Rechazado", tone: "danger" }
+    ];
+
+    var TIPOS = [
+      { key: "ajuste_escala", label: "Ajuste de automatización Escala" },
+      { key: "otro", label: "Otra solicitud del proceso" }
+    ];
+
+    var PRIORIDADES = [
+      { key: "baja", label: "Baja", tone: "neutral" },
+      { key: "media", label: "Media", tone: "accent" },
+      { key: "alta", label: "Alta", tone: "warn" },
+      { key: "urgente", label: "Urgente", tone: "danger" }
+    ];
+
+    var state = { nextSeq: 1, tickets: [] };
+    var ui = { view: "nuevo", filterTipo: "todos", openTicketId: null };
+    var storageOk = true;
+    var pendingEvidence = null; // { dataUrl, name, approxKb }
+    var toastSeq = 0;
+
+    function byKey(list, key) {
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].key === key) return list[i];
+      }
+      return list[0];
+    }
+    function stageInfo(key) {
+      return byKey(STAGES, key);
+    }
+    function tipoLabel(key) {
+      return byKey(TIPOS, key).label;
+    }
+    function prioridadInfo(key) {
+      return byKey(PRIORIDADES, key);
+    }
+    function escapeHtml(str) {
+      return String(str == null ? "" : str).replace(/[&<>"']/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+      });
+    }
+    function fmtDate(iso) {
+      try {
+        var d = new Date(iso);
+        return d.toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" });
+      } catch (e) {
+        return iso;
+      }
+    }
+    function nextFolio() {
+      return "TCK-" + String(state.nextSeq).padStart(4, "0");
+    }
+
+    function showToast(message, tone) {
+      var root = document.getElementById("toast-root");
+      var id = "toast-" + ++toastSeq;
+      var el = document.createElement("div");
+      el.className = "toast tone-" + (tone || "neutral");
+      el.id = id;
+      el.textContent = message;
+      root.appendChild(el);
+      setTimeout(function () {
+        var node = document.getElementById(id);
+        if (node) node.remove();
+      }, 4200);
+    }
+
+    function loadState() {
+      try {
+        var raw = window.localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          var parsed = JSON.parse(raw);
+          if (parsed && Array.isArray(parsed.tickets)) return parsed;
+        }
+      } catch (e) {
+        storageOk = false;
+      }
+      return { nextSeq: 1, tickets: [] };
+    }
+
+    function saveState(newState) {
+      state = newState;
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
+        storageOk = true;
+      } catch (e) {
+        storageOk = false;
+      }
+    }
+
+    // ---------- Evidence attachment (compressed to a data URL, no upload needed) ----------
+
+    function compressImageFile(file, maxDim, quality) {
+      return new Promise(function (resolve, reject) {
+        var reader = new FileReader();
+        reader.onerror = function () {
+          reject(new Error("read_error"));
+        };
+        reader.onload = function () {
+          var img = new Image();
+          img.onerror = function () {
+            reject(new Error("decode_error"));
+          };
+          img.onload = function () {
+            var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+            var cw = Math.max(1, Math.round(img.width * scale));
+            var ch = Math.max(1, Math.round(img.height * scale));
+            var canvas = document.createElement("canvas");
+            canvas.width = cw;
+            canvas.height = ch;
+            var ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, cw, ch);
+            resolve(canvas.toDataURL("image/jpeg", quality));
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function renderEvidencePreview() {
+      var slot = document.getElementById("evidence-preview");
+      if (!slot) return;
+      if (!pendingEvidence) {
+        slot.innerHTML = "";
+        return;
+      }
+      slot.innerHTML =
+        '<img class="evidence-thumb" src="' + pendingEvidence.dataUrl + '" alt="Vista previa de la evidencia" />' +
+        '<span class="evidence-meta">' + escapeHtml(pendingEvidence.name) + " · ~" + pendingEvidence.approxKb + ' KB</span>' +
+        '<button type="button" class="evidence-remove" data-remove-evidence>Quitar</button>';
+    }
+
+    function handleEvidenceChange(input) {
+      var file = input.files && input.files[0];
+      if (!file) {
+        pendingEvidence = null;
+        renderEvidencePreview();
+        return;
+      }
+      if (!/^image\//.test(file.type)) {
+        showToast("Solo se aceptan imágenes (PNG, JPG o WEBP).", "danger");
+        input.value = "";
+        return;
+      }
+      if (file.size > 8 * 1024 * 1024) {
+        showToast("La imagen es muy pesada (máximo 8 MB).", "danger");
+        input.value = "";
+        return;
+      }
+      compressImageFile(file, 1000, 0.72)
+        .then(function (dataUrl) {
+          pendingEvidence = {
+            dataUrl: dataUrl,
+            name: file.name,
+            approxKb: Math.round((dataUrl.length * 0.75) / 1024)
+          };
+          renderEvidencePreview();
+        })
+        .catch(function () {
+          showToast("No se pudo procesar la imagen. Intenta con otra.", "danger");
+        });
+    }
+
+    // ---------- Mutations ----------
+
+    function renderFormErrors(errors) {
+      var slot = document.getElementById("form-errors-slot");
+      if (!slot) return;
+      slot.innerHTML = errors.length
+        ? "Revisa lo siguiente:<ul>" + errors.map(function (e) { return "<li>" + escapeHtml(e) + "</li>"; }).join("") + "</ul>"
+        : "";
+    }
+
+    function handleCreateSubmit(e) {
+      e.preventDefault();
+      var f = e.target;
+      var titulo = f.titulo.value.trim();
+      var descripcion = f.descripcion.value.trim();
+      var tipo = f.tipo.value;
+      var prioridad = f.prioridad.value;
+      var nombre = f.solicitante_nombre.value.trim();
+      var email = f.solicitante_email.value.trim();
+      var area = f.area.value.trim();
+
+      var errors = [];
+      if (!titulo) errors.push("El título es obligatorio.");
+      if (!descripcion) errors.push("La descripción es obligatoria.");
+      if (!TIPOS.some(function (t) { return t.key === tipo; })) errors.push("Selecciona un tipo de solicitud.");
+      if (!nombre) errors.push("Tu nombre es obligatorio.");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push("Ingresa un correo válido.");
+
+      if (errors.length) {
+        renderFormErrors(errors);
+        return;
+      }
+      renderFormErrors([]);
+
+      var now = new Date().toISOString();
+      var folio = nextFolio();
+      var ticket = {
+        id: state.nextSeq,
+        folio: folio,
+        titulo: titulo,
+        descripcion: descripcion,
+        tipo: tipo,
+        prioridad: prioridad,
+        solicitanteNombre: nombre,
+        solicitanteEmail: email,
+        area: area || null,
+        evidencia: pendingEvidence ? { dataUrl: pendingEvidence.dataUrl, name: pendingEvidence.name } : null,
+        stage: "nuevo",
+        createdAt: now,
+        updatedAt: now,
+        history: [{ fromStage: null, toStage: "nuevo", changedBy: nombre, comment: "Ticket creado", at: now }]
+      };
+      saveState({ nextSeq: state.nextSeq + 1, tickets: [ticket].concat(state.tickets) });
+      pendingEvidence = null;
+
+      ui.view = "tablero";
+      ui.openTicketId = ticket.id;
+      render();
+      showToast(
+        storageOk ? "Ticket " + folio + " creado. Guarda el folio como comprobante." : "Ticket " + folio + " creado (sin guardado permanente en este navegador).",
+        storageOk ? "success" : "warn"
+      );
+    }
+
+    function handleStageChange(ticketId, toStage, changedBy, comment) {
+      var idx = -1;
+      for (var i = 0; i < state.tickets.length; i++) {
+        if (state.tickets[i].id === ticketId) { idx = i; break; }
+      }
+      if (idx === -1) return;
+      var t = state.tickets[idx];
+      if (t.stage === toStage && !comment) return;
+      var now = new Date().toISOString();
+      var history = t.history.concat([{ fromStage: t.stage, toStage: toStage, changedBy: changedBy || null, comment: comment || null, at: now }]);
+      var updated = Object.assign({}, t, { stage: toStage, updatedAt: now, history: history });
+      var tickets = state.tickets.slice();
+      tickets[idx] = updated;
+      saveState({ nextSeq: state.nextSeq, tickets: tickets });
+      render();
+      showToast("Ticket " + t.folio + " movido a " + stageInfo(toStage).label + ".", "success");
+    }
+
+    function handleStageFormSubmit(e) {
+      e.preventDefault();
+      var f = e.target;
+      var id = Number(f.getAttribute("data-ticket-id"));
+      var toStage = f.toStage.value;
+      var changedBy = f.changedBy.value.trim();
+      var comment = f.comment.value.trim();
+      handleStageChange(id, toStage, changedBy || null, comment || null);
+    }
+
+    // ---------- Rendering ----------
+
+    function renderTabRow() {
+      var count = state.tickets.length;
+      return (
+        '<div class="tab-row">' +
+        '<div class="tabs">' +
+        '<button type="button" class="tab-btn' + (ui.view === "nuevo" ? " active" : "") + '" data-tab="nuevo">Nuevo ticket</button>' +
+        '<button type="button" class="tab-btn' + (ui.view === "tablero" ? " active" : "") + '" data-tab="tablero">Mis tickets<span class="tab-count">' + count + "</span></button>" +
+        "</div>" +
+        (ui.view === "tablero"
+          ? '<select class="filter-select" data-filter-tipo>' +
+            '<option value="todos"' + (ui.filterTipo === "todos" ? " selected" : "") + ">Todos los tipos</option>" +
+            TIPOS.map(function (t) {
+              return '<option value="' + t.key + '"' + (ui.filterTipo === t.key ? " selected" : "") + ">" + escapeHtml(t.label) + "</option>";
+            }).join("") +
+            "</select>"
+          : "") +
+        "</div>"
+      );
+    }
+
+    function renderHeader() {
+      return (
+        '<header class="app-header">' +
+        '<div class="brand-row">' +
+        "<div>" +
+        '<h1 class="wordmark">Tickets <span>Hommik</span></h1>' +
+        '<p class="subtitle">Reporta ajustes de automatización Escala u otras solicitudes del proceso, con folio y trazabilidad.</p>' +
+        "</div>" +
+        '<div class="live-note"><span class="live-dot"></span>Tus solicitudes se guardan en este navegador — guarda el folio o una captura como comprobante.</div>' +
+        "</div>" +
+        (!storageOk
+          ? '<div class="storage-banner">Este navegador no permite guardar datos localmente (por ejemplo, en modo incógnito). Tus tickets no se conservarán al recargar la página.</div>'
+          : "") +
+        renderTabRow() +
+        "</header>"
+      );
+    }
+
+    function ticketCardHtml(t) {
+      var p = prioridadInfo(t.prioridad);
+      return (
+        '<div class="ticket-card" data-open-ticket="' + t.id + '">' +
+        '<div class="ticket-folio">' + t.folio + "</div>" +
+        '<div class="ticket-title">' + escapeHtml(t.titulo) + "</div>" +
+        '<div class="ticket-tipo">' + escapeHtml(tipoLabel(t.tipo)) + "</div>" +
+        '<div class="chip-row">' +
+        '<span class="chip tone-' + p.tone + '"><span class="chip-dot"></span>' + p.label + "</span>" +
+        (t.evidencia ? '<span class="chip tone-neutral"><span class="chip-dot"></span>Con evidencia</span>' : '<span class="ticket-requester">' + escapeHtml(t.solicitanteNombre) + "</span>") +
+        "</div>" +
+        '<select class="quick-move" data-quick-move="' + t.id + '">' +
+        STAGES.map(function (s) {
+          return '<option value="' + s.key + '"' + (s.key === t.stage ? " selected" : "") + ">Mover a: " + s.label + "</option>";
+        }).join("") +
+        "</select>" +
+        "</div>"
+      );
+    }
+
+    function renderTablero() {
+      if (state.tickets.length === 0) {
+        return (
+          '<div class="board-empty">Todavía no has enviado ninguna solicitud desde este navegador.<br />' +
+          '<a href="#" data-tab="nuevo">Crear el primer ticket →</a></div>'
+        );
+      }
+
+      var filtered = state.tickets.filter(function (t) {
+        return ui.filterTipo === "todos" || t.tipo === ui.filterTipo;
+      });
+      var byStage = {};
+      STAGES.forEach(function (s) { byStage[s.key] = []; });
+      filtered.forEach(function (t) { (byStage[t.stage] = byStage[t.stage] || []).push(t); });
+
+      var rail = STAGES.map(function (s) {
+        return (
+          '<div class="station">' +
+          '<div class="station-dot" style="--tone: var(--' + s.tone + ')">' + byStage[s.key].length + "</div>" +
+          '<div><div class="station-label">' + s.label + '</div><div class="station-meta">' + byStage[s.key].length + (byStage[s.key].length === 1 ? " ticket" : " tickets") + "</div></div>" +
+          "</div>"
+        );
+      }).join("");
+
+      var columns = STAGES.map(function (s) {
+        var items = byStage[s.key];
+        return (
+          '<div class="column">' +
+          (items.length ? items.map(ticketCardHtml).join("") : '<div class="column-empty">Sin tickets</div>') +
+          "</div>"
+        );
+      }).join("");
+
+      return (
+        '<div class="board-scroll">' +
+        '<div class="rail">' + rail + "</div>" +
+        '<div class="columns">' + columns + "</div>" +
+        "</div>"
+      );
+    }
+
+    function renderForm() {
+      return (
+        '<div class="form-card">' +
+        "<h2>Nueva solicitud</h2>" +
+        '<p class="form-intro">Usa este formulario para reportar un ajuste que necesites en las automatizaciones de Escala, o cualquier otra solicitud relacionada con el proceso de Hommik. Cada solicitud queda con folio propio para que puedas darle seguimiento.</p>' +
+        '<ul class="form-tips">' +
+        "<li>Describe el problema paso a paso, como si se lo explicaras a alguien que no lo ha visto.</li>" +
+        "<li>Si es un error, adjunta una captura de pantalla — ayuda mucho a diagnosticarlo más rápido.</li>" +
+        "</ul>" +
+        '<form data-form="new-ticket">' +
+        '<div class="field-grid">' +
+        '<div class="field full"><label>Título</label><input type="text" name="titulo" maxlength="140" placeholder="Ej. Ajustar horario de disparo de campaña X en Escala" required /></div>' +
+        '<div class="field full"><label>Descripción</label><textarea name="descripcion" placeholder="Describe el ajuste o la solicitud con el mayor detalle posible." required></textarea></div>' +
+        '<div class="field"><label>Tipo de solicitud</label><select name="tipo" required><option value="" disabled selected>Selecciona una opción</option>' +
+        TIPOS.map(function (t) { return '<option value="' + t.key + '">' + escapeHtml(t.label) + "</option>"; }).join("") +
+        "</select></div>" +
+        '<div class="field"><label>Prioridad</label><select name="prioridad">' +
+        PRIORIDADES.map(function (p) { return '<option value="' + p.key + '"' + (p.key === "media" ? " selected" : "") + ">" + p.label + "</option>"; }).join("") +
+        "</select></div>" +
+        '<div class="field"><label>Tu nombre</label><input type="text" name="solicitante_nombre" maxlength="120" placeholder="Nombre y apellido" required /></div>' +
+        '<div class="field"><label>Tu correo</label><input type="email" name="solicitante_email" placeholder="nombre@hommik.com" required /></div>' +
+        '<div class="field full"><label>Área / equipo <span class="opt">(opcional)</span></label><input type="text" name="area" maxlength="120" placeholder="Ej. Marketing, CRM, Operaciones" /></div>' +
+        '<div class="field full">' +
+        "<label>Evidencia del error <span class=\"opt\">(opcional)</span></label>" +
+        '<div class="file-row">' +
+        '<input type="file" id="evidencia-input" class="file-input-hidden" accept="image/png,image/jpeg,image/webp" />' +
+        '<label class="btn btn-ghost file-btn" for="evidencia-input">Adjuntar captura</label>' +
+        '<span class="file-hint">PNG, JPG o WEBP · se comprime automáticamente</span>' +
+        "</div>" +
+        '<div id="evidence-preview" class="evidence-preview"></div>' +
+        "</div>" +
+        "</div>" +
+        '<div id="form-errors-slot" class="form-errors"></div>' +
+        '<div class="form-actions"><button type="submit" class="btn btn-primary">Enviar solicitud</button></div>' +
+        "</form>" +
+        "</div>"
+      );
+    }
+
+    function timelineEntryHtml(entry) {
+      var step = entry.fromStage
+        ? stageInfo(entry.fromStage).label + " → " + stageInfo(entry.toStage).label
+        : "Ticket creado en " + stageInfo(entry.toStage).label;
+      return (
+        '<li style="--tone: var(--' + stageInfo(entry.toStage).tone + ')">' +
+        '<div class="timeline-step">' + step + "</div>" +
+        '<div class="timeline-meta">' + fmtDate(entry.at) + (entry.changedBy ? " · " + escapeHtml(entry.changedBy) : "") + "</div>" +
+        (entry.comment ? '<div class="timeline-comment">' + escapeHtml(entry.comment) + "</div>" : "") +
+        "</li>"
+      );
+    }
+
+    function renderDrawer() {
+      var t = null;
+      for (var i = 0; i < state.tickets.length; i++) {
+        if (state.tickets[i].id === ui.openTicketId) { t = state.tickets[i]; break; }
+      }
+      if (!t) return "";
+      var p = prioridadInfo(t.prioridad);
+      var s = stageInfo(t.stage);
+
+      return (
+        '<div class="drawer-backdrop" data-close-drawer></div>' +
+        '<aside class="drawer">' +
+        '<button type="button" class="drawer-close" data-close-drawer aria-label="Cerrar">×</button>' +
+        "<div>" +
+        '<div class="ticket-folio">' + t.folio + "</div>" +
+        '<div class="drawer-title-row"><h3>' + escapeHtml(t.titulo) + '</h3><span class="chip tone-' + s.tone + '"><span class="chip-dot"></span>' + s.label + "</span></div>" +
+        "</div>" +
+        '<p class="drawer-desc">' + escapeHtml(t.descripcion) + "</p>" +
+        (t.evidencia
+          ? '<div class="evidence-block"><h4>Evidencia adjunta</h4><a href="' + t.evidencia.dataUrl + '" target="_blank" rel="noopener"><img class="evidence-full" src="' + t.evidencia.dataUrl + '" alt="Evidencia adjunta: ' + escapeHtml(t.evidencia.name) + '" /></a><p class="evidence-caption">' + escapeHtml(t.evidencia.name) + " · clic para ver en tamaño completo</p></div>"
+          : "") +
+        '<dl class="meta-grid">' +
+        '<div><dt>Tipo</dt><dd>' + escapeHtml(tipoLabel(t.tipo)) + "</dd></div>" +
+        '<div><dt>Prioridad</dt><dd><span class="chip tone-' + p.tone + '"><span class="chip-dot"></span>' + p.label + "</span></dd></div>" +
+        '<div><dt>Solicitante</dt><dd>' + escapeHtml(t.solicitanteNombre) + '<br /><span style="color:var(--ink-muted);font-size:12px">' + escapeHtml(t.solicitanteEmail) + "</span></dd></div>" +
+        '<div><dt>Área</dt><dd>' + (t.area ? escapeHtml(t.area) : "—") + "</dd></div>" +
+        '<div class="full"><dt>Creado</dt><dd>' + fmtDate(t.createdAt) + " · Última actualización " + fmtDate(t.updatedAt) + "</dd></div>" +
+        "</dl>" +
+        "<hr />" +
+        '<form class="stage-form" data-form="stage-update" data-ticket-id="' + t.id + '">' +
+        "<h4>Actualizar etapa</h4>" +
+        '<div class="field-grid">' +
+        '<div class="field"><label>Nueva etapa</label><select name="toStage">' +
+        STAGES.map(function (st) { return '<option value="' + st.key + '"' + (st.key === t.stage ? " selected" : "") + ">" + st.label + "</option>"; }).join("") +
+        "</select></div>" +
+        '<div class="field"><label>Tu nombre <span class="opt">(quién actualiza)</span></label><input type="text" name="changedBy" placeholder="Equipo Hommik" /></div>' +
+        '<div class="field"><label>Comentario <span class="opt">(opcional, queda en la trazabilidad)</span></label><textarea name="comment"></textarea></div>' +
+        "</div>" +
+        '<div class="form-actions"><button type="submit" class="btn btn-primary">Guardar cambio</button></div>' +
+        "</form>" +
+        "<hr />" +
+        '<div><h4>Trazabilidad</h4><ul class="timeline">' + t.history.map(timelineEntryHtml).join("") + "</ul></div>" +
+        "</aside>"
+      );
+    }
+
+    function render() {
+      var app = document.getElementById("app");
+      var html = renderHeader();
+      html += ui.view === "nuevo" ? renderForm() : renderTablero();
+      app.innerHTML = html;
+      renderEvidencePreview();
+
+      var drawerHost = document.getElementById("drawer-host");
+      if (!drawerHost) {
+        drawerHost = document.createElement("div");
+        drawerHost.id = "drawer-host";
+        document.body.appendChild(drawerHost);
+      }
+      drawerHost.innerHTML = ui.openTicketId != null ? renderDrawer() : "";
+    }
+
+    function init() {
+      state = loadState();
+
+      document.addEventListener("click", function (e) {
+        var tabBtn = e.target.closest("[data-tab]");
+        if (tabBtn) {
+          if (tabBtn.tagName === "A") e.preventDefault();
+          ui.view = tabBtn.getAttribute("data-tab");
+          render();
+          return;
+        }
+        var removeEvidence = e.target.closest("[data-remove-evidence]");
+        if (removeEvidence) {
+          pendingEvidence = null;
+          var input = document.getElementById("evidencia-input");
+          if (input) input.value = "";
+          renderEvidencePreview();
+          return;
+        }
+        var openEl = e.target.closest("[data-open-ticket]");
+        if (openEl && !e.target.closest("select")) {
+          ui.openTicketId = Number(openEl.getAttribute("data-open-ticket"));
+          render();
+          return;
+        }
+        if (e.target.closest("[data-close-drawer]")) {
+          ui.openTicketId = null;
+          render();
+          return;
+        }
+      });
+
+      document.addEventListener("change", function (e) {
+        if (e.target.id === "evidencia-input") {
+          handleEvidenceChange(e.target);
+          return;
+        }
+        var quickMove = e.target.closest("[data-quick-move]");
+        if (quickMove) {
+          var id = Number(quickMove.getAttribute("data-quick-move"));
+          handleStageChange(id, quickMove.value, null, null);
+          return;
+        }
+        var filterSel = e.target.closest("[data-filter-tipo]");
+        if (filterSel) {
+          ui.filterTipo = filterSel.value;
+          render();
+          return;
+        }
+      });
+
+      document.addEventListener("submit", function (e) {
+        if (e.target.matches && e.target.matches('[data-form="new-ticket"]')) {
+          handleCreateSubmit(e);
+          return;
+        }
+        if (e.target.matches && e.target.matches('[data-form="stage-update"]')) {
+          handleStageFormSubmit(e);
+          return;
+        }
+      });
+
+      render();
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", init);
+    } else {
+      init();
+    }
+  })();
+</script>
+</body>
+</html>
