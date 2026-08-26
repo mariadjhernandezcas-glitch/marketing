@@ -939,6 +939,24 @@
 
     var STORAGE_KEY = "hommikTicketsState_v1";
 
+    // Pega aquí la URL de tu Apps Script Web App (termina en /exec) para que
+    // cada ticket se agregue también a una Hoja de Google compartida.
+    // Déjalo vacío ("") para que la página siga funcionando solo con
+    // guardado local, sin la hoja.
+    var WEBHOOK_URL = "";
+
+    function pushToSheet(action, ticket) {
+      if (!WEBHOOK_URL) return;
+      try {
+        fetch(WEBHOOK_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: action, ticket: ticket })
+        }).catch(function () {});
+      } catch (e) {}
+    }
+
     var STAGES = [
       { key: "nuevo", label: "Nuevo", tone: "neutral" },
       { key: "en_revision", label: "En revisión", tone: "accent" },
@@ -1162,6 +1180,7 @@
         history: [{ fromStage: null, toStage: "nuevo", changedBy: nombre, comment: "Ticket creado", at: now }]
       };
       saveState({ nextSeq: state.nextSeq + 1, tickets: [ticket].concat(state.tickets) });
+      pushToSheet("create", ticket);
       pendingEvidence = null;
 
       ui.view = "tablero";
@@ -1187,6 +1206,7 @@
       var tickets = state.tickets.slice();
       tickets[idx] = updated;
       saveState({ nextSeq: state.nextSeq, tickets: tickets });
+      pushToSheet("update", Object.assign({}, updated, { lastComment: comment || "", lastChangedBy: changedBy || "" }));
       render();
       showToast("Ticket " + t.folio + " movido a " + stageInfo(toStage).label + ".", "success");
     }
