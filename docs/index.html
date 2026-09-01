@@ -5,7 +5,7 @@
 <title>Tickets Hommik</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎫</text></svg>" />
-<meta name="description" content="Formulario para que el equipo de Hommik reporte ajustes de automatización de Escala u otras solicitudes del proceso, con evidencia adjunta y trazabilidad." />
+<meta name="description" content="Formulario para que el equipo de Hommik reporte ajustes de automatización de Escala u otras solicitudes del proceso, con folio y trazabilidad." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
@@ -568,90 +568,6 @@
     font-family: inherit;
   }
 
-  .file-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-
-  .file-input-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-
-  .file-input-hidden:focus + .file-btn {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-
-  .file-btn {
-    display: inline-flex;
-    align-items: center;
-    cursor: pointer;
-    padding: 8px 14px;
-    font-size: 12.5px;
-    border-radius: 8px;
-  }
-
-  .file-hint {
-    font-size: 11.5px;
-    color: var(--ink-muted);
-  }
-
-  .evidence-preview:empty {
-    display: none;
-  }
-
-  .evidence-preview {
-    margin-top: 10px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 8px 10px;
-  }
-
-  .evidence-thumb {
-    width: 48px;
-    height: 48px;
-    object-fit: cover;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    flex: none;
-  }
-
-  .evidence-meta {
-    font-size: 12px;
-    color: var(--ink-muted);
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .evidence-remove {
-    appearance: none;
-    background: none;
-    border: none;
-    color: var(--danger);
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    padding: 4px 6px;
-    flex: none;
-  }
-
   .form-errors {
     background: var(--danger-bg);
     color: var(--danger);
@@ -804,20 +720,6 @@
     margin: 0 0 12px;
   }
 
-  .evidence-block img.evidence-full {
-    max-width: 100%;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    display: block;
-    margin-top: 8px;
-  }
-
-  .evidence-caption {
-    font-size: 11.5px;
-    color: var(--ink-muted);
-    margin: 6px 0 0;
-  }
-
   .timeline {
     list-style: none;
     margin: 0;
@@ -943,7 +845,7 @@
     // cada ticket se agregue también a una Hoja de Google compartida.
     // Déjalo vacío ("") para que la página siga funcionando solo con
     // guardado local, sin la hoja.
-    var WEBHOOK_URL = "";
+    var WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyd0hmXlYGBgQiJj3zGMn-19FsW3fZ2hPQ7dmbCH9nOtKJl2k94BA5GuJ8umbpreo-nRw/exec";
 
     function pushToSheet(action, ticket) {
       if (!WEBHOOK_URL) return;
@@ -981,7 +883,6 @@
     var state = { nextSeq: 1, tickets: [] };
     var ui = { view: "nuevo", filterTipo: "todos", openTicketId: null };
     var storageOk = true;
-    var pendingEvidence = null; // { dataUrl, name, approxKb }
     var toastSeq = 0;
 
     function byKey(list, key) {
@@ -1053,80 +954,6 @@
       }
     }
 
-    // ---------- Evidence attachment (compressed to a data URL, no upload needed) ----------
-
-    function compressImageFile(file, maxDim, quality) {
-      return new Promise(function (resolve, reject) {
-        var reader = new FileReader();
-        reader.onerror = function () {
-          reject(new Error("read_error"));
-        };
-        reader.onload = function () {
-          var img = new Image();
-          img.onerror = function () {
-            reject(new Error("decode_error"));
-          };
-          img.onload = function () {
-            var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-            var cw = Math.max(1, Math.round(img.width * scale));
-            var ch = Math.max(1, Math.round(img.height * scale));
-            var canvas = document.createElement("canvas");
-            canvas.width = cw;
-            canvas.height = ch;
-            var ctx = canvas.getContext("2d");
-            ctx.drawImage(img, 0, 0, cw, ch);
-            resolve(canvas.toDataURL("image/jpeg", quality));
-          };
-          img.src = reader.result;
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-
-    function renderEvidencePreview() {
-      var slot = document.getElementById("evidence-preview");
-      if (!slot) return;
-      if (!pendingEvidence) {
-        slot.innerHTML = "";
-        return;
-      }
-      slot.innerHTML =
-        '<img class="evidence-thumb" src="' + pendingEvidence.dataUrl + '" alt="Vista previa de la evidencia" />' +
-        '<span class="evidence-meta">' + escapeHtml(pendingEvidence.name) + " · ~" + pendingEvidence.approxKb + ' KB</span>' +
-        '<button type="button" class="evidence-remove" data-remove-evidence>Quitar</button>';
-    }
-
-    function handleEvidenceChange(input) {
-      var file = input.files && input.files[0];
-      if (!file) {
-        pendingEvidence = null;
-        renderEvidencePreview();
-        return;
-      }
-      if (!/^image\//.test(file.type)) {
-        showToast("Solo se aceptan imágenes (PNG, JPG o WEBP).", "danger");
-        input.value = "";
-        return;
-      }
-      if (file.size > 8 * 1024 * 1024) {
-        showToast("La imagen es muy pesada (máximo 8 MB).", "danger");
-        input.value = "";
-        return;
-      }
-      compressImageFile(file, 1000, 0.72)
-        .then(function (dataUrl) {
-          pendingEvidence = {
-            dataUrl: dataUrl,
-            name: file.name,
-            approxKb: Math.round((dataUrl.length * 0.75) / 1024)
-          };
-          renderEvidencePreview();
-        })
-        .catch(function () {
-          showToast("No se pudo procesar la imagen. Intenta con otra.", "danger");
-        });
-    }
-
     // ---------- Mutations ----------
 
     function renderFormErrors(errors) {
@@ -1173,7 +1000,6 @@
         solicitanteNombre: nombre,
         solicitanteEmail: email,
         area: area || null,
-        evidencia: pendingEvidence ? { dataUrl: pendingEvidence.dataUrl, name: pendingEvidence.name } : null,
         stage: "nuevo",
         createdAt: now,
         updatedAt: now,
@@ -1181,7 +1007,6 @@
       };
       saveState({ nextSeq: state.nextSeq + 1, tickets: [ticket].concat(state.tickets) });
       pushToSheet("create", ticket);
-      pendingEvidence = null;
 
       ui.view = "tablero";
       ui.openTicketId = ticket.id;
@@ -1270,7 +1095,7 @@
         '<div class="ticket-tipo">' + escapeHtml(tipoLabel(t.tipo)) + "</div>" +
         '<div class="chip-row">' +
         '<span class="chip tone-' + p.tone + '"><span class="chip-dot"></span>' + p.label + "</span>" +
-        (t.evidencia ? '<span class="chip tone-neutral"><span class="chip-dot"></span>Con evidencia</span>' : '<span class="ticket-requester">' + escapeHtml(t.solicitanteNombre) + "</span>") +
+        '<span class="ticket-requester">' + escapeHtml(t.solicitanteNombre) + "</span>" +
         "</div>" +
         '<select class="quick-move" data-quick-move="' + t.id + '">' +
         STAGES.map(function (s) {
@@ -1329,7 +1154,7 @@
         '<p class="form-intro">Usa este formulario para reportar un ajuste que necesites en las automatizaciones de Escala, o cualquier otra solicitud relacionada con el proceso de Hommik. Cada solicitud queda con folio propio para que puedas darle seguimiento.</p>' +
         '<ul class="form-tips">' +
         "<li>Describe el problema paso a paso, como si se lo explicaras a alguien que no lo ha visto.</li>" +
-        "<li>Si es un error, adjunta una captura de pantalla — ayuda mucho a diagnosticarlo más rápido.</li>" +
+        "<li>Si es un error, incluye el mensaje exacto que aparece y en qué momento ocurre.</li>" +
         "</ul>" +
         '<form data-form="new-ticket">' +
         '<div class="field-grid">' +
@@ -1344,15 +1169,6 @@
         '<div class="field"><label>Tu nombre</label><input type="text" name="solicitante_nombre" maxlength="120" placeholder="Nombre y apellido" required /></div>' +
         '<div class="field"><label>Tu correo</label><input type="email" name="solicitante_email" placeholder="nombre@hommik.com" required /></div>' +
         '<div class="field full"><label>Área / equipo <span class="opt">(opcional)</span></label><input type="text" name="area" maxlength="120" placeholder="Ej. Marketing, CRM, Operaciones" /></div>' +
-        '<div class="field full">' +
-        "<label>Evidencia del error <span class=\"opt\">(opcional)</span></label>" +
-        '<div class="file-row">' +
-        '<input type="file" id="evidencia-input" class="file-input-hidden" accept="image/png,image/jpeg,image/webp" />' +
-        '<label class="btn btn-ghost file-btn" for="evidencia-input">Adjuntar captura</label>' +
-        '<span class="file-hint">PNG, JPG o WEBP · se comprime automáticamente</span>' +
-        "</div>" +
-        '<div id="evidence-preview" class="evidence-preview"></div>' +
-        "</div>" +
         "</div>" +
         '<div id="form-errors-slot" class="form-errors"></div>' +
         '<div class="form-actions"><button type="submit" class="btn btn-primary">Enviar solicitud</button></div>' +
@@ -1392,9 +1208,6 @@
         '<div class="drawer-title-row"><h3>' + escapeHtml(t.titulo) + '</h3><span class="chip tone-' + s.tone + '"><span class="chip-dot"></span>' + s.label + "</span></div>" +
         "</div>" +
         '<p class="drawer-desc">' + escapeHtml(t.descripcion) + "</p>" +
-        (t.evidencia
-          ? '<div class="evidence-block"><h4>Evidencia adjunta</h4><a href="' + t.evidencia.dataUrl + '" target="_blank" rel="noopener"><img class="evidence-full" src="' + t.evidencia.dataUrl + '" alt="Evidencia adjunta: ' + escapeHtml(t.evidencia.name) + '" /></a><p class="evidence-caption">' + escapeHtml(t.evidencia.name) + " · clic para ver en tamaño completo</p></div>"
-          : "") +
         '<dl class="meta-grid">' +
         '<div><dt>Tipo</dt><dd>' + escapeHtml(tipoLabel(t.tipo)) + "</dd></div>" +
         '<div><dt>Prioridad</dt><dd><span class="chip tone-' + p.tone + '"><span class="chip-dot"></span>' + p.label + "</span></dd></div>" +
@@ -1425,7 +1238,6 @@
       var html = renderHeader();
       html += ui.view === "nuevo" ? renderForm() : renderTablero();
       app.innerHTML = html;
-      renderEvidencePreview();
 
       var drawerHost = document.getElementById("drawer-host");
       if (!drawerHost) {
@@ -1447,14 +1259,6 @@
           render();
           return;
         }
-        var removeEvidence = e.target.closest("[data-remove-evidence]");
-        if (removeEvidence) {
-          pendingEvidence = null;
-          var input = document.getElementById("evidencia-input");
-          if (input) input.value = "";
-          renderEvidencePreview();
-          return;
-        }
         var openEl = e.target.closest("[data-open-ticket]");
         if (openEl && !e.target.closest("select")) {
           ui.openTicketId = Number(openEl.getAttribute("data-open-ticket"));
@@ -1469,10 +1273,6 @@
       });
 
       document.addEventListener("change", function (e) {
-        if (e.target.id === "evidencia-input") {
-          handleEvidenceChange(e.target);
-          return;
-        }
         var quickMove = e.target.closest("[data-quick-move]");
         if (quickMove) {
           var id = Number(quickMove.getAttribute("data-quick-move"));
