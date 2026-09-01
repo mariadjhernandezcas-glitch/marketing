@@ -1,5 +1,12 @@
 # Changelog
 
+## Gestión comercial (Escala)
+
+- Dashboard en `/comercial`: pipeline por etapa, tiempos de gestión, tasa de
+  conversión y negocios sin actividad reciente, por asesora.
+- Sincronización con la API de Escala (`/api/escala/sync`) para negocios,
+  pipelines y actividades.
+
 ## Initial release
 
 - Página de solicitud (`/nuevo`) para que el equipo de Hommik envíe ajustes de
