@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/escala/sync",
+      "schedule": "0 * * * *"
+    }
+  ]
+}

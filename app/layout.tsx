@@ -34,6 +34,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   Pipeline
                 </Link>
                 <Link
+                  href="/comercial"
+                  className="px-3 py-1.5 rounded-md text-slate-600 hover:bg-slate-100 font-medium"
+                >
+                  Gestión comercial
+                </Link>
+                <Link
                   href="/nuevo"
                   className="px-3 py-1.5 rounded-md bg-brand-500 text-white hover:bg-brand-600 font-medium"
                 >
