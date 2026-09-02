@@ -9,12 +9,14 @@ export function SyncButton() {
   const [isPending, startTransition] = useTransition();
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
   const busy = syncing || isPending;
 
   async function sync() {
     setSyncing(true);
     setError(null);
+    setWarning(null);
     try {
       const res = await fetch("/api/escala/sync", { method: "POST" });
       const data = await res.json().catch(() => ({}));
@@ -22,6 +24,7 @@ export function SyncButton() {
         setError(data.error || "No se pudo sincronizar con Escala.");
         return;
       }
+      if (data.warning) setWarning(data.warning);
       startTransition(() => router.refresh());
     } finally {
       setSyncing(false);
@@ -39,6 +42,11 @@ export function SyncButton() {
         {busy ? "Sincronizando…" : "Sincronizar con Escala"}
       </button>
       {error && <p className="max-w-xs text-right text-xs text-danger-600">{error}</p>}
+      {!error && warning && (
+        <p className="max-w-xs text-right text-xs text-warning-700">
+          Negocios y pipeline sincronizados. No se pudieron traer las actividades: {warning}
+        </p>
+      )}
     </div>
   );
 }

@@ -13,7 +13,7 @@ async function handleSync(req: NextRequest) {
   }
   try {
     const result = await syncEscala();
-    return NextResponse.json({ ok: true, ...result });
+    return NextResponse.json({ ok: true, ...result, warning: result.activitiesError });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Error desconocido";
     return NextResponse.json({ ok: false, error: message }, { status: 500 });

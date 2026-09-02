@@ -176,13 +176,27 @@ export interface SyncResult {
   pipelines: number;
   deals: number;
   activities: number;
+  activitiesError: string | null;
 }
 
 export async function syncEscala(): Promise<SyncResult> {
   const pipelines = await syncPipelines();
   const deals = await syncDeals();
-  const activities = await syncActivities();
-  return { pipelines, deals, activities };
+
+  // Negocios y pipelines son el núcleo del dashboard; si la búsqueda de
+  // actividades de Escala falla (p. ej. error 500 del lado de Escala en
+  // cuentas sin actividades aún, o con un historial muy grande), no debe
+  // tumbar la sincronización completa — el dashboard sigue siendo útil
+  // sin la lista de "últimas gestiones".
+  let activities = 0;
+  let activitiesError: string | null = null;
+  try {
+    activities = await syncActivities();
+  } catch (error) {
+    activitiesError = error instanceof Error ? error.message : "Error desconocido";
+  }
+
+  return { pipelines, deals, activities, activitiesError };
 }
 
 export interface AdvisorOption {
