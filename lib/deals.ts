@@ -57,6 +57,23 @@ async function syncDeals(): Promise<number> {
   const onPage = async (deals: EscalaDeal[]) => {
     for (const deal of deals) {
       count += 1;
+      if (count === 1) {
+        // Diagnóstico temporal: la forma real de la respuesta de Escala no
+        // siempre coincide con la spec publicada. Solo se registran nombres
+        // de campos y tipos, nunca valores (evita filtrar datos de clientes
+        // a los logs).
+        console.log(
+          "[escala-sync] deal keys:",
+          Object.keys(deal),
+          "assignedTo:",
+          typeof deal.assignedTo,
+          JSON.stringify(deal.assignedTo),
+          "pipeline keys:",
+          deal.pipeline ? Object.keys(deal.pipeline) : null,
+          "pipeline.stageId type:",
+          typeof deal.pipeline?.stageId
+        );
+      }
       const existing = (await sql`
         SELECT stage_id FROM escala_deals WHERE id = ${deal.id}
       `) as { stage_id: string | null }[];
