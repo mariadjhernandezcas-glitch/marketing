@@ -24,7 +24,15 @@ export function SyncButton() {
         setError(data.error || "No se pudo sincronizar con Escala.");
         return;
       }
-      if (data.warning) setWarning(data.warning);
+      if (data.warning) {
+        const failed: string[] = [];
+        if (data.pipelinesError) failed.push("pipelines");
+        if (data.dealsError) failed.push("negocios");
+        if (data.activitiesError) failed.push("actividades");
+        const ok = ["pipelines", "negocios", "actividades"].filter((r) => !failed.includes(r));
+        const okText = ok.length ? `Se sincronizaron: ${ok.join(", ")}. ` : "";
+        setWarning(`${okText}No se pudo traer: ${failed.join(", ")}. Detalle: ${data.warning}`);
+      }
       startTransition(() => router.refresh());
     } finally {
       setSyncing(false);
@@ -42,11 +50,7 @@ export function SyncButton() {
         {busy ? "Sincronizando…" : "Sincronizar con Escala"}
       </button>
       {error && <p className="max-w-xs text-right text-xs text-danger-600">{error}</p>}
-      {!error && warning && (
-        <p className="max-w-xs text-right text-xs text-warning-700">
-          Negocios y pipeline sincronizados. No se pudieron traer las actividades: {warning}
-        </p>
-      )}
+      {!error && warning && <p className="max-w-xs text-right text-xs text-warning-700">{warning}</p>}
     </div>
   );
 }

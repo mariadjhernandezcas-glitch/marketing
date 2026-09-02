@@ -54,7 +54,7 @@ async function syncDeals(): Promise<number> {
   let maxModified = since;
   let count = 0;
 
-  await scrollDeals(since, async (deals: EscalaDeal[]) => {
+  const onPage = async (deals: EscalaDeal[]) => {
     for (const deal of deals) {
       count += 1;
       const existing = (await sql`
@@ -119,7 +119,21 @@ async function syncDeals(): Promise<number> {
         maxModified = deal.modified;
       }
     }
-  });
+  };
+
+  try {
+    await scrollDeals(since, onPage);
+  } catch (error) {
+    // La búsqueda incremental de Escala (filtro de fecha) puede fallar con
+    // un error interno de su lado aunque la cuenta esté bien configurada.
+    // Si ya teníamos un cursor guardado, reintentamos una vez con una
+    // sincronización completa (sin filtro de fecha), que es la que
+    // funciona de forma confiable.
+    if (!since) throw error;
+    count = 0;
+    maxModified = since;
+    await scrollDeals(undefined, onPage);
+  }
 
   if (maxModified) await setSyncCursor("deals_since", maxModified);
   return count;
