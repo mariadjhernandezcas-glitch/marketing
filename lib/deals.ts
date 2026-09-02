@@ -62,16 +62,47 @@ async function syncDeals(): Promise<number> {
         // siempre coincide con la spec publicada. Solo se registran nombres
         // de campos y tipos, nunca valores (evita filtrar datos de clientes
         // a los logs).
+        const dealAny = deal as unknown as Record<string, unknown>;
+        const custom = dealAny.custom;
         console.log(
           "[escala-sync] deal keys:",
           Object.keys(deal),
-          "assignedTo:",
-          typeof deal.assignedTo,
-          JSON.stringify(deal.assignedTo),
           "pipeline keys:",
           deal.pipeline ? Object.keys(deal.pipeline) : null,
-          "pipeline.stageId type:",
-          typeof deal.pipeline?.stageId
+          "contact keys:",
+          deal.contact ? Object.keys(deal.contact) : null,
+          "funnelId:",
+          JSON.stringify(dealAny.funnelId),
+          "priority:",
+          JSON.stringify(dealAny.priority),
+          "productId:",
+          JSON.stringify(dealAny.productId),
+          "products:",
+          Array.isArray(dealAny.products)
+            ? `array(${(dealAny.products as unknown[]).length}) firstKeys=${JSON.stringify(
+                Object.keys((dealAny.products as Record<string, unknown>[])[0] ?? {})
+              )}`
+            : typeof dealAny.products,
+          "custom type:",
+          Array.isArray(custom) ? `array(${custom.length})` : typeof custom,
+          "custom sample:",
+          Array.isArray(custom)
+            ? JSON.stringify(
+                custom.map((c: Record<string, unknown>) =>
+                  c && typeof c === "object" ? Object.keys(c) : typeof c
+                )
+              )
+            : custom && typeof custom === "object"
+              ? JSON.stringify(Object.keys(custom as Record<string, unknown>))
+              : null,
+          "custom field names:",
+          Array.isArray(custom)
+            ? JSON.stringify(
+                custom.map(
+                  (c: Record<string, unknown>) => c?.name ?? c?.label ?? c?.key ?? c?.fieldId ?? null
+                )
+              )
+            : null
         );
       }
       const existing = (await sql`
