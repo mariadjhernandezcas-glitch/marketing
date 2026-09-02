@@ -174,29 +174,39 @@ async function syncActivities(): Promise<number> {
 
 export interface SyncResult {
   pipelines: number;
+  pipelinesError: string | null;
   deals: number;
+  dealsError: string | null;
   activities: number;
   activitiesError: string | null;
 }
 
-export async function syncEscala(): Promise<SyncResult> {
-  const pipelines = await syncPipelines();
-  const deals = await syncDeals();
-
-  // Negocios y pipelines son el núcleo del dashboard; si la búsqueda de
-  // actividades de Escala falla (p. ej. error 500 del lado de Escala en
-  // cuentas sin actividades aún, o con un historial muy grande), no debe
-  // tumbar la sincronización completa — el dashboard sigue siendo útil
-  // sin la lista de "últimas gestiones".
-  let activities = 0;
-  let activitiesError: string | null = null;
+async function runSyncStep(step: () => Promise<number>): Promise<{ count: number; error: string | null }> {
   try {
-    activities = await syncActivities();
+    return { count: await step(), error: null };
   } catch (error) {
-    activitiesError = error instanceof Error ? error.message : "Error desconocido";
+    return { count: 0, error: error instanceof Error ? error.message : "Error desconocido" };
   }
+}
 
-  return { pipelines, deals, activities, activitiesError };
+// La API de Escala puede responder 500 en un endpoint puntual (p. ej. un
+// error interno de su servicio de búsqueda) sin que eso signifique que
+// toda la cuenta esté mal configurada. Cada recurso se sincroniza de forma
+// aislada: un fallo en uno no debe tumbar a los demás ni impedir que el
+// dashboard muestre lo que sí se logró traer.
+export async function syncEscala(): Promise<SyncResult> {
+  const pipelinesResult = await runSyncStep(syncPipelines);
+  const dealsResult = await runSyncStep(syncDeals);
+  const activitiesResult = await runSyncStep(syncActivities);
+
+  return {
+    pipelines: pipelinesResult.count,
+    pipelinesError: pipelinesResult.error,
+    deals: dealsResult.count,
+    dealsError: dealsResult.error,
+    activities: activitiesResult.count,
+    activitiesError: activitiesResult.error,
+  };
 }
 
 export interface AdvisorOption {
