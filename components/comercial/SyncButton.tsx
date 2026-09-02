@@ -28,8 +28,7 @@ export function SyncButton() {
         const failed: string[] = [];
         if (data.pipelinesError) failed.push("pipelines");
         if (data.dealsError) failed.push("negocios");
-        if (data.activitiesError) failed.push("actividades");
-        const ok = ["pipelines", "negocios", "actividades"].filter((r) => !failed.includes(r));
+        const ok = ["pipelines", "negocios"].filter((r) => !failed.includes(r));
         const okText = ok.length ? `Se sincronizaron: ${ok.join(", ")}. ` : "";
         setWarning(`${okText}No se pudo traer: ${failed.join(", ")}. Detalle: ${data.warning}`);
       }

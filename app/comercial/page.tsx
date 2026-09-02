@@ -5,7 +5,6 @@ import { SyncButton } from "@/components/comercial/SyncButton";
 import { MetricCard } from "@/components/comercial/MetricCard";
 import { StageFunnel } from "@/components/comercial/StageFunnel";
 import { DealsTable } from "@/components/comercial/DealsTable";
-import { ActivityList } from "@/components/comercial/ActivityList";
 import {
   IconAlertTriangle,
   IconBriefcase,
@@ -142,25 +141,19 @@ export default async function ComercialPage({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="card p-4">
-          <SectionHeader title="Negocios sin actividad reciente" badge={metrics.staleDeals.length} />
-          {metrics.staleDeals.length > 0 && (
-            <p className="mb-3 flex items-center gap-1.5 text-xs text-warning-700">
-              <IconAlertTriangle className="h-3.5 w-3.5" />
-              Sin cambio de etapa ni actividad en más de 5 días.
-            </p>
-          )}
-          <DealsTable
-            deals={metrics.staleDeals}
-            emptyMessage="Ningún negocio abierto lleva más de 5 días sin actividad."
-            showDaysStale
-          />
-        </div>
-        <div className="card p-4">
-          <SectionHeader title="Últimas gestiones registradas" />
-          <ActivityList activities={metrics.recentActivities} />
-        </div>
+      <div className="card p-4">
+        <SectionHeader title="Negocios sin actividad reciente" badge={metrics.staleDeals.length} />
+        {metrics.staleDeals.length > 0 && (
+          <p className="mb-3 flex items-center gap-1.5 text-xs text-warning-700">
+            <IconAlertTriangle className="h-3.5 w-3.5" />
+            Sin cambio de etapa ni actividad en más de 5 días.
+          </p>
+        )}
+        <DealsTable
+          deals={metrics.staleDeals}
+          emptyMessage="Ningún negocio abierto lleva más de 5 días sin actividad."
+          showDaysStale
+        />
       </div>
 
       <div className="card p-4">

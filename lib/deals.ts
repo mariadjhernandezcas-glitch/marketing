@@ -208,8 +208,6 @@ export interface SyncResult {
   pipelinesError: string | null;
   deals: number;
   dealsError: string | null;
-  activities: number;
-  activitiesError: string | null;
 }
 
 async function runSyncStep(step: () => Promise<number>): Promise<{ count: number; error: string | null }> {
@@ -225,18 +223,19 @@ async function runSyncStep(step: () => Promise<number>): Promise<{ count: number
 // toda la cuenta esté mal configurada. Cada recurso se sincroniza de forma
 // aislada: un fallo en uno no debe tumbar a los demás ni impedir que el
 // dashboard muestre lo que sí se logró traer.
+//
+// La búsqueda de actividades (/activities) de Escala responde 500 de forma
+// consistente para esta cuenta (error interno de su lado), así que no se
+// intenta sincronizar — negocios y pipeline son el núcleo del dashboard.
 export async function syncEscala(): Promise<SyncResult> {
   const pipelinesResult = await runSyncStep(syncPipelines);
   const dealsResult = await runSyncStep(syncDeals);
-  const activitiesResult = await runSyncStep(syncActivities);
 
   return {
     pipelines: pipelinesResult.count,
     pipelinesError: pipelinesResult.error,
     deals: dealsResult.count,
     dealsError: dealsResult.error,
-    activities: activitiesResult.count,
-    activitiesError: activitiesResult.error,
   };
 }
 
@@ -248,13 +247,14 @@ export interface AdvisorOption {
 export async function listAdvisors(): Promise<AdvisorOption[]> {
   const sql = await getSqlReady();
   const rows = (await sql`
-    SELECT assigned_to AS email, COUNT(*)::int AS "dealCount"
+    SELECT assigned_to, COUNT(*)::int AS count
     FROM escala_deals
-    WHERE assigned_to <> 'unassigned'
     GROUP BY assigned_to
-    ORDER BY "dealCount" DESC
-  `) as AdvisorOption[];
-  return rows;
+    ORDER BY count DESC
+  `) as { assigned_to: string; count: number }[];
+  return rows
+    .filter((row) => row.assigned_to !== "unassigned")
+    .map((row) => ({ email: row.assigned_to, dealCount: row.count }));
 }
 
 // Diagnóstico temporal: confirma si la sincronización realmente está

@@ -13,9 +13,7 @@ async function handleSync(req: NextRequest) {
   }
   try {
     const result = await syncEscala();
-    const warnings = [result.pipelinesError, result.dealsError, result.activitiesError].filter(
-      (w): w is string => Boolean(w)
-    );
+    const warnings = [result.pipelinesError, result.dealsError].filter((w): w is string => Boolean(w));
     return NextResponse.json({ ok: true, ...result, warning: warnings.join(" · ") || null });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Error desconocido";
