@@ -288,25 +288,27 @@ export async function listAdvisors(): Promise<AdvisorOption[]> {
     .map((row) => ({ email: row.assigned_to, dealCount: row.count }));
 }
 
-// Diagnóstico temporal: confirma si la sincronización realmente está
-// insertando filas y con qué distribución de assigned_to, sin exponer
-// datos de clientes (solo conteos).
-export async function debugDealsSummary(): Promise<{
-  total: number;
-  byAssigned: { assigned_to: string; count: number }[];
-}> {
-  const sql = await getSqlReady();
-  const totalRows = (await sql`SELECT COUNT(*)::int AS total FROM escala_deals`) as {
-    total: number;
-  }[];
-  const byAssignedRows = (await sql`
-    SELECT assigned_to, COUNT(*)::int AS count
-    FROM escala_deals
-    GROUP BY assigned_to
-    ORDER BY count DESC
-    LIMIT 10
-  `) as { assigned_to: string; count: number }[];
-  return { total: totalRows[0]?.total ?? 0, byAssigned: byAssignedRows };
+export type PeriodKey = "all" | "this_month" | "last_month";
+
+export const PERIOD_LABELS: Record<PeriodKey, string> = {
+  all: "Todo",
+  this_month: "Este mes",
+  last_month: "Mes pasado",
+};
+
+// Rango [start, end) en UTC para el período elegido. `null` significa "sin
+// filtro de fecha". El filtro se aplica sobre escala_created_at (fecha en
+// que se creó el negocio en Escala).
+export function getPeriodRange(period: PeriodKey): { start: Date; end: Date } | null {
+  if (period === "all") return null;
+  const now = new Date();
+  const startOfThisMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  if (period === "this_month") {
+    const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+    return { start: startOfThisMonth, end };
+  }
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+  return { start, end: startOfThisMonth };
 }
 
 export interface PipelineStage {
@@ -334,32 +336,53 @@ export interface DealRow {
   days_since_activity: number | null;
 }
 
+export interface StageTiming {
+  stage_id: string;
+  name: string;
+  color?: string;
+  dealCount: number;
+  avgDays: number | null;
+}
+
+export interface AdvisorSummary {
+  email: string;
+  total: number;
+  open: number;
+  won: number;
+  lost: number;
+  openValue: number;
+  conversionRate: number | null;
+  avgDaysToClose: number | null;
+}
+
 export interface DashboardMetrics {
   totalDeals: number;
   openDeals: number;
   wonDeals: number;
   lostDeals: number;
   totalOpenValue: number;
+  totalLostValue: number;
   conversionRate: number | null;
   avgHoursToFirstMove: number | null;
   avgDaysToClose: number | null;
   stageBreakdown: StageBreakdown[];
+  lostBreakdown: StageBreakdown[];
+  stageTimings: StageTiming[];
   recentDeals: DealRow[];
   staleDeals: DealRow[];
-  recentActivities: {
-    id: string;
-    title: string | null;
-    type: string | null;
-    status: string | null;
-    contact_name: string | null;
-    start_at: string | null;
-  }[];
+  lostDealsList: DealRow[];
 }
 
 const STALE_AFTER_DAYS = 5;
 
-export async function getDashboardMetrics(advisorEmail: string): Promise<DashboardMetrics> {
+export async function getDashboardMetrics(
+  advisorEmail: string,
+  period: PeriodKey = "all"
+): Promise<DashboardMetrics> {
   const sql = await getSqlReady();
+  const range = getPeriodRange(period);
+  const start = range?.start ?? null;
+  const end = range?.end ?? null;
 
   const counts = (await sql`
     SELECT
@@ -367,10 +390,13 @@ export async function getDashboardMetrics(advisorEmail: string): Promise<Dashboa
       COUNT(*) FILTER (WHERE stage_type = 'open')::int AS open,
       COUNT(*) FILTER (WHERE stage_type = 'won')::int AS won,
       COUNT(*) FILTER (WHERE stage_type = 'lost')::int AS lost,
-      COALESCE(SUM(value) FILTER (WHERE stage_type = 'open'), 0)::float AS "openValue"
+      COALESCE(SUM(value) FILTER (WHERE stage_type = 'open'), 0)::float AS "openValue",
+      COALESCE(SUM(value) FILTER (WHERE stage_type = 'lost'), 0)::float AS "lostValue"
     FROM escala_deals
     WHERE assigned_to = ${advisorEmail}
-  `) as { total: number; open: number; won: number; lost: number; openValue: number }[];
+      AND (${start}::timestamptz IS NULL OR escala_created_at >= ${start})
+      AND (${end}::timestamptz IS NULL OR escala_created_at < ${end})
+  `) as { total: number; open: number; won: number; lost: number; openValue: number; lostValue: number }[];
   const c = counts[0];
 
   const pipelineRows = (await sql`
@@ -380,11 +406,14 @@ export async function getDashboardMetrics(advisorEmail: string): Promise<Dashboa
     SELECT stages FROM escala_pipelines ORDER BY synced_at DESC LIMIT 1
   `) as { stages: PipelineStage[] }[];
   const stages: PipelineStage[] = pipelineRows[0]?.stages ?? fallbackPipeline[0]?.stages ?? [];
+  const stageById = new Map(stages.map((s) => [s.id, s]));
 
   const stageCounts = (await sql`
     SELECT stage_id, COUNT(*)::int AS count, COALESCE(SUM(value), 0)::float AS value
     FROM escala_deals
     WHERE assigned_to = ${advisorEmail} AND stage_type = 'open'
+      AND (${start}::timestamptz IS NULL OR escala_created_at >= ${start})
+      AND (${end}::timestamptz IS NULL OR escala_created_at < ${end})
     GROUP BY stage_id
   `) as { stage_id: string; count: number; value: number }[];
   const stageCountMap = new Map(stageCounts.map((r) => [r.stage_id, r]));
@@ -397,6 +426,26 @@ export async function getDashboardMetrics(advisorEmail: string): Promise<Dashboa
       value: stageCountMap.get(stage.id)?.value ?? 0,
     }));
 
+  const lostCounts = (await sql`
+    SELECT stage_id, COUNT(*)::int AS count, COALESCE(SUM(value), 0)::float AS value
+    FROM escala_deals
+    WHERE assigned_to = ${advisorEmail} AND stage_type = 'lost'
+      AND (${start}::timestamptz IS NULL OR escala_created_at >= ${start})
+      AND (${end}::timestamptz IS NULL OR escala_created_at < ${end})
+    GROUP BY stage_id
+  `) as { stage_id: string; count: number; value: number }[];
+  const lostBreakdown: StageBreakdown[] = lostCounts.map((row) => {
+    const stage = stageById.get(row.stage_id);
+    return {
+      id: row.stage_id,
+      name: stage?.name ?? row.stage_id ?? "Sin etapa",
+      type: "lost",
+      color: stage?.color ?? "#dc2626",
+      count: row.count,
+      value: row.value,
+    };
+  });
+
   const firstMoveRows = (await sql`
     SELECT AVG(EXTRACT(EPOCH FROM (e.changed_at - d.escala_created_at)) / 3600)::float AS avg_hours
     FROM (
@@ -406,6 +455,8 @@ export async function getDashboardMetrics(advisorEmail: string): Promise<Dashboa
     ) e
     JOIN escala_deals d ON d.id = e.deal_id
     WHERE d.assigned_to = ${advisorEmail} AND d.escala_created_at IS NOT NULL
+      AND (${start}::timestamptz IS NULL OR d.escala_created_at >= ${start})
+      AND (${end}::timestamptz IS NULL OR d.escala_created_at < ${end})
   `) as { avg_hours: number | null }[];
 
   const closeRows = (await sql`
@@ -418,7 +469,44 @@ export async function getDashboardMetrics(advisorEmail: string): Promise<Dashboa
     ) e
     JOIN escala_deals d ON d.id = e.deal_id
     WHERE d.assigned_to = ${advisorEmail} AND d.escala_created_at IS NOT NULL
+      AND (${start}::timestamptz IS NULL OR d.escala_created_at >= ${start})
+      AND (${end}::timestamptz IS NULL OR d.escala_created_at < ${end})
   `) as { avg_days: number | null }[];
+
+  // Tiempo promedio que un negocio permanece en cada etapa: para cada
+  // transición registrada, mide desde que entró a la etapa hasta la
+  // siguiente transición (o hasta ahora, si sigue ahí). Solo cubre etapas
+  // alcanzadas por una transición observada desde que se activó la
+  // sincronización — se vuelve más completo con el tiempo.
+  const stageTimingRows = (await sql`
+    WITH events AS (
+      SELECT
+        e.to_stage_id,
+        e.changed_at,
+        LEAD(e.changed_at) OVER (PARTITION BY e.deal_id ORDER BY e.changed_at) AS next_changed_at
+      FROM escala_deal_stage_events e
+      JOIN escala_deals d ON d.id = e.deal_id
+      WHERE d.assigned_to = ${advisorEmail}
+        AND (${start}::timestamptz IS NULL OR d.escala_created_at >= ${start})
+        AND (${end}::timestamptz IS NULL OR d.escala_created_at < ${end})
+    )
+    SELECT
+      to_stage_id AS stage_id,
+      COUNT(*)::int AS deal_count,
+      AVG(EXTRACT(EPOCH FROM (COALESCE(next_changed_at, now()) - changed_at)) / 86400)::float AS avg_days
+    FROM events
+    GROUP BY to_stage_id
+  `) as { stage_id: string; deal_count: number; avg_days: number | null }[];
+  const stageTimings: StageTiming[] = stageTimingRows.map((row) => {
+    const stage = stageById.get(row.stage_id);
+    return {
+      stage_id: row.stage_id,
+      name: stage?.name ?? row.stage_id ?? "Sin etapa",
+      color: stage?.color,
+      dealCount: row.deal_count,
+      avgDays: row.avg_days,
+    };
+  });
 
   const recentDeals = (await sql`
     SELECT
@@ -431,6 +519,8 @@ export async function getDashboardMetrics(advisorEmail: string): Promise<Dashboa
     FROM escala_deals d
     LEFT JOIN escala_activities a ON a.deal_id = d.id
     WHERE d.assigned_to = ${advisorEmail}
+      AND (${start}::timestamptz IS NULL OR d.escala_created_at >= ${start})
+      AND (${end}::timestamptz IS NULL OR d.escala_created_at < ${end})
     GROUP BY d.id
     ORDER BY d.escala_modified_at DESC
     LIMIT 15
@@ -447,6 +537,8 @@ export async function getDashboardMetrics(advisorEmail: string): Promise<Dashboa
     FROM escala_deals d
     LEFT JOIN escala_activities a ON a.deal_id = d.id
     WHERE d.assigned_to = ${advisorEmail} AND d.stage_type = 'open'
+      AND (${start}::timestamptz IS NULL OR d.escala_created_at >= ${start})
+      AND (${end}::timestamptz IS NULL OR d.escala_created_at < ${end})
     GROUP BY d.id
     HAVING now() - GREATEST(d.escala_modified_at, COALESCE(MAX(a.start_at), d.escala_modified_at))
       > make_interval(days => ${STALE_AFTER_DAYS})
@@ -454,13 +546,23 @@ export async function getDashboardMetrics(advisorEmail: string): Promise<Dashboa
     LIMIT 20
   `) as DealRow[];
 
-  const recentActivities = (await sql`
-    SELECT id, title, type, status, contact_name, start_at
-    FROM escala_activities
-    WHERE assigned_to = ${advisorEmail}
-    ORDER BY COALESCE(start_at, escala_modified_at) DESC
-    LIMIT 15
-  `) as DashboardMetrics["recentActivities"];
+  const lostDealsList = (await sql`
+    SELECT
+      d.id, d.name, d.contact_name, d.stage_id, d.stage_type, d.value,
+      d.escala_created_at, d.escala_modified_at,
+      GREATEST(d.escala_modified_at, COALESCE(MAX(a.start_at), d.escala_modified_at)) AS last_activity_at,
+      EXTRACT(
+        DAY FROM now() - GREATEST(d.escala_modified_at, COALESCE(MAX(a.start_at), d.escala_modified_at))
+      )::int AS days_since_activity
+    FROM escala_deals d
+    LEFT JOIN escala_activities a ON a.deal_id = d.id
+    WHERE d.assigned_to = ${advisorEmail} AND d.stage_type = 'lost'
+      AND (${start}::timestamptz IS NULL OR d.escala_created_at >= ${start})
+      AND (${end}::timestamptz IS NULL OR d.escala_created_at < ${end})
+    GROUP BY d.id
+    ORDER BY d.escala_modified_at DESC
+    LIMIT 20
+  `) as DealRow[];
 
   const closedTotal = c.won + c.lost;
 
@@ -470,12 +572,70 @@ export async function getDashboardMetrics(advisorEmail: string): Promise<Dashboa
     wonDeals: c.won,
     lostDeals: c.lost,
     totalOpenValue: c.openValue,
+    totalLostValue: c.lostValue,
     conversionRate: closedTotal > 0 ? c.won / closedTotal : null,
     avgHoursToFirstMove: firstMoveRows[0]?.avg_hours ?? null,
     avgDaysToClose: closeRows[0]?.avg_days ?? null,
     stageBreakdown,
+    lostBreakdown,
+    stageTimings,
     recentDeals,
     staleDeals,
-    recentActivities,
+    lostDealsList,
   };
+}
+
+// Resumen de todas las asesoras a la vez, para la vista comparativa.
+export async function getAdvisorsOverview(period: PeriodKey = "all"): Promise<AdvisorSummary[]> {
+  const sql = await getSqlReady();
+  const range = getPeriodRange(period);
+  const start = range?.start ?? null;
+  const end = range?.end ?? null;
+
+  const counts = (await sql`
+    SELECT
+      assigned_to,
+      COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE stage_type = 'open')::int AS open,
+      COUNT(*) FILTER (WHERE stage_type = 'won')::int AS won,
+      COUNT(*) FILTER (WHERE stage_type = 'lost')::int AS lost,
+      COALESCE(SUM(value) FILTER (WHERE stage_type = 'open'), 0)::float AS "openValue"
+    FROM escala_deals
+    WHERE assigned_to <> 'unassigned'
+      AND (${start}::timestamptz IS NULL OR escala_created_at >= ${start})
+      AND (${end}::timestamptz IS NULL OR escala_created_at < ${end})
+    GROUP BY assigned_to
+  `) as { assigned_to: string; total: number; open: number; won: number; lost: number; openValue: number }[];
+
+  const closeRows = (await sql`
+    SELECT d.assigned_to, AVG(EXTRACT(EPOCH FROM (e.changed_at - d.escala_created_at)) / 86400)::float AS avg_days
+    FROM (
+      SELECT DISTINCT ON (deal_id) deal_id, changed_at
+      FROM escala_deal_stage_events
+      WHERE stage_type IN ('won', 'lost')
+      ORDER BY deal_id, changed_at DESC
+    ) e
+    JOIN escala_deals d ON d.id = e.deal_id
+    WHERE d.assigned_to <> 'unassigned' AND d.escala_created_at IS NOT NULL
+      AND (${start}::timestamptz IS NULL OR d.escala_created_at >= ${start})
+      AND (${end}::timestamptz IS NULL OR d.escala_created_at < ${end})
+    GROUP BY d.assigned_to
+  `) as { assigned_to: string; avg_days: number | null }[];
+  const closeMap = new Map(closeRows.map((r) => [r.assigned_to, r.avg_days]));
+
+  return counts
+    .map((c) => {
+      const closedTotal = c.won + c.lost;
+      return {
+        email: c.assigned_to,
+        total: c.total,
+        open: c.open,
+        won: c.won,
+        lost: c.lost,
+        openValue: c.openValue,
+        conversionRate: closedTotal > 0 ? c.won / closedTotal : null,
+        avgDaysToClose: closeMap.get(c.assigned_to) ?? null,
+      };
+    })
+    .sort((a, b) => b.total - a.total);
 }

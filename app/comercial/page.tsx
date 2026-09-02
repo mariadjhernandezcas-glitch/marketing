@@ -1,10 +1,13 @@
-import { debugDealsSummary, getDashboardMetrics, listAdvisors } from "@/lib/deals";
+import { getAdvisorsOverview, getDashboardMetrics, listAdvisors, type PeriodKey } from "@/lib/deals";
 import { formatCurrency, formatDays, formatHours, formatPercent } from "@/lib/format";
 import { AdvisorSelect } from "@/components/comercial/AdvisorSelect";
+import { PeriodFilter } from "@/components/comercial/PeriodFilter";
 import { SyncButton } from "@/components/comercial/SyncButton";
 import { MetricCard } from "@/components/comercial/MetricCard";
 import { StageFunnel } from "@/components/comercial/StageFunnel";
+import { StageTimingsTable } from "@/components/comercial/StageTimingsTable";
 import { DealsTable } from "@/components/comercial/DealsTable";
+import { AdvisorsOverviewTable } from "@/components/comercial/AdvisorsOverviewTable";
 import {
   IconAlertTriangle,
   IconBriefcase,
@@ -31,17 +34,22 @@ function SectionHeader({ title, badge }: { title: string; badge?: string | numbe
   );
 }
 
+const VALID_PERIODS: PeriodKey[] = ["all", "this_month", "last_month"];
+
 export default async function ComercialPage({
   searchParams,
 }: {
-  searchParams: { advisor?: string };
+  searchParams: { advisor?: string; period?: string };
 }) {
+  const period: PeriodKey = VALID_PERIODS.includes(searchParams.period as PeriodKey)
+    ? (searchParams.period as PeriodKey)
+    : "all";
+
   const advisors = await listAdvisors();
   const advisorEmail =
     searchParams.advisor || process.env.DEFAULT_ADVISOR_EMAIL || advisors[0]?.email;
 
   if (!advisorEmail) {
-    const debug = await debugDealsSummary();
     return (
       <div className="card flex flex-col items-center gap-3 p-10 text-center">
         <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-600">
@@ -53,26 +61,14 @@ export default async function ComercialPage({
           empezar a ver el dashboard.
         </p>
         <SyncButton />
-        <div className="mt-4 max-w-md rounded-lg border border-warning-100 bg-warning-50 p-3 text-left text-xs text-warning-700">
-          <p className="font-semibold">Diagnóstico temporal</p>
-          <p>Total de filas en escala_deals: {debug.total}</p>
-          {debug.byAssigned.map((row) => (
-            <p key={row.assigned_to}>
-              {JSON.stringify(row.assigned_to)}: {row.count}
-            </p>
-          ))}
-          <p className="mt-2 font-semibold">listAdvisors() devolvió: {advisors.length} fila(s)</p>
-          <p className="break-all">{JSON.stringify(advisors)}</p>
-          <p className="mt-2">
-            searchParams.advisor: {JSON.stringify(searchParams.advisor ?? null)} · DEFAULT_ADVISOR_EMAIL:{" "}
-            {JSON.stringify(process.env.DEFAULT_ADVISOR_EMAIL ?? null)}
-          </p>
-        </div>
       </div>
     );
   }
 
-  const metrics = await getDashboardMetrics(advisorEmail);
+  const [metrics, advisorsOverview] = await Promise.all([
+    getDashboardMetrics(advisorEmail, period),
+    getAdvisorsOverview(period),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -81,13 +77,19 @@ export default async function ComercialPage({
           <h1 className="text-xl font-semibold text-slate-800">Gestión comercial</h1>
           <p className="text-sm text-slate-500">Negocios asignados y tiempos de gestión por asesora</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <PeriodFilter selected={period} />
           <AdvisorSelect advisors={advisors} selected={advisorEmail} />
           <SyncButton />
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="card p-4">
+        <SectionHeader title="Resumen por asesora (todas)" badge={advisorsOverview.length} />
+        <AdvisorsOverviewTable advisors={advisorsOverview} selected={advisorEmail} period={period} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-7">
         <MetricCard
           label="Negocios asignados"
           value={String(metrics.totalDeals)}
@@ -116,6 +118,12 @@ export default async function ComercialPage({
           tone="brand"
           emphasize
         />
+        <MetricCard
+          label="Valor perdido"
+          value={formatCurrency(metrics.totalLostValue)}
+          icon={<IconWallet />}
+          tone="danger"
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -139,6 +147,25 @@ export default async function ComercialPage({
             tone="slate"
           />
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="card p-4">
+          <SectionHeader title="Negocios perdidos por etapa" badge={metrics.lostDeals} />
+          <StageFunnel stages={metrics.lostBreakdown} />
+        </div>
+        <div className="card p-4">
+          <SectionHeader title="Tiempo promedio por etapa" />
+          <p className="mb-3 text-xs text-slate-400">
+            Desde que un negocio entra a la etapa hasta que sale (o hasta hoy, si sigue ahí).
+          </p>
+          <StageTimingsTable timings={metrics.stageTimings} />
+        </div>
+      </div>
+
+      <div className="card p-4">
+        <SectionHeader title="Detalle de negocios perdidos" badge={metrics.lostDealsList.length} />
+        <DealsTable deals={metrics.lostDealsList} emptyMessage="Sin negocios perdidos en este período." />
       </div>
 
       <div className="card p-4">
