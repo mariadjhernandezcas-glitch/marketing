@@ -62,6 +62,12 @@ export default async function ComercialPage({
               {JSON.stringify(row.assigned_to)}: {row.count}
             </p>
           ))}
+          <p className="mt-2 font-semibold">listAdvisors() devolvió: {advisors.length} fila(s)</p>
+          <p className="break-all">{JSON.stringify(advisors)}</p>
+          <p className="mt-2">
+            searchParams.advisor: {JSON.stringify(searchParams.advisor ?? null)} · DEFAULT_ADVISOR_EMAIL:{" "}
+            {JSON.stringify(process.env.DEFAULT_ADVISOR_EMAIL ?? null)}
+          </p>
         </div>
       </div>
     );
