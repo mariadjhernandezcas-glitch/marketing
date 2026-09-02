@@ -257,6 +257,27 @@ export async function listAdvisors(): Promise<AdvisorOption[]> {
   return rows;
 }
 
+// Diagnóstico temporal: confirma si la sincronización realmente está
+// insertando filas y con qué distribución de assigned_to, sin exponer
+// datos de clientes (solo conteos).
+export async function debugDealsSummary(): Promise<{
+  total: number;
+  byAssigned: { assigned_to: string; count: number }[];
+}> {
+  const sql = await getSqlReady();
+  const totalRows = (await sql`SELECT COUNT(*)::int AS total FROM escala_deals`) as {
+    total: number;
+  }[];
+  const byAssignedRows = (await sql`
+    SELECT assigned_to, COUNT(*)::int AS count
+    FROM escala_deals
+    GROUP BY assigned_to
+    ORDER BY count DESC
+    LIMIT 10
+  `) as { assigned_to: string; count: number }[];
+  return { total: totalRows[0]?.total ?? 0, byAssigned: byAssignedRows };
+}
+
 export interface PipelineStage {
   id: string;
   name: string;

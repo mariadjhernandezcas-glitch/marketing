@@ -1,4 +1,4 @@
-import { getDashboardMetrics, listAdvisors } from "@/lib/deals";
+import { debugDealsSummary, getDashboardMetrics, listAdvisors } from "@/lib/deals";
 import { formatCurrency, formatDays, formatHours, formatPercent } from "@/lib/format";
 import { AdvisorSelect } from "@/components/comercial/AdvisorSelect";
 import { SyncButton } from "@/components/comercial/SyncButton";
@@ -42,6 +42,7 @@ export default async function ComercialPage({
     searchParams.advisor || process.env.DEFAULT_ADVISOR_EMAIL || advisors[0]?.email;
 
   if (!advisorEmail) {
+    const debug = await debugDealsSummary();
     return (
       <div className="card flex flex-col items-center gap-3 p-10 text-center">
         <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-600">
@@ -53,6 +54,15 @@ export default async function ComercialPage({
           empezar a ver el dashboard.
         </p>
         <SyncButton />
+        <div className="mt-4 max-w-md rounded-lg border border-warning-100 bg-warning-50 p-3 text-left text-xs text-warning-700">
+          <p className="font-semibold">Diagnóstico temporal</p>
+          <p>Total de filas en escala_deals: {debug.total}</p>
+          {debug.byAssigned.map((row) => (
+            <p key={row.assigned_to}>
+              {JSON.stringify(row.assigned_to)}: {row.count}
+            </p>
+          ))}
+        </div>
       </div>
     );
   }
